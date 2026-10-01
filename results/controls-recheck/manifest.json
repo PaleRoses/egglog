@@ -1,0 +1,62 @@
+{
+  "purpose": "Check two slower measurements; unchanged source, same exact input path and cwd for all arms; compare before/after constant-row filtering",
+  "source_hashes": {
+    "previous": {
+      ".github/workflows/build.yml": "d00402b7eab538e2a9fc8505a5f64d23b8a93900edebd927f4fb80c3a8594a16",
+      "CHANGELOG.md": "192d8bba287bbe4bbcda617c1c4dc2f3505a91702b22a80ee24450432e9f53c7",
+      "benches/rust_api_benchmarking.rs": "dceb4975180b701905e7ee6c6189928aaeb11c288ffa1a3a7c68e407ff564fa0",
+      "src/extract.rs": "17cdaaea04f89b39eff812672a8e0384e886eefbdf540945c2981e7a5ab600e9",
+      "tests/extraction_proof_mode.rs": "60115339bbe9c84c86bdf49bf1722e779fb0512e0242c8315a1edac046807486",
+      "tests/integration_test.rs": "769d486d435905eca8fbe2c0e8685ec685de77fe78945281828454ae6f293c74",
+      "src/extract/dependency_tests.rs": "aaf7edbf3dbcdaf74f5aae214ba597965a71e15190c2a898a797aa682bb35898"
+    },
+    "final": {
+      ".github/workflows/build.yml": "d00402b7eab538e2a9fc8505a5f64d23b8a93900edebd927f4fb80c3a8594a16",
+      "CHANGELOG.md": "192d8bba287bbe4bbcda617c1c4dc2f3505a91702b22a80ee24450432e9f53c7",
+      "benches/rust_api_benchmarking.rs": "dceb4975180b701905e7ee6c6189928aaeb11c288ffa1a3a7c68e407ff564fa0",
+      "src/extract.rs": "1f561b2408a2432cee61c508757494dd026b28fa9f183f841ea39459ed0cc55a",
+      "tests/extraction_proof_mode.rs": "60115339bbe9c84c86bdf49bf1722e779fb0512e0242c8315a1edac046807486",
+      "tests/integration_test.rs": "769d486d435905eca8fbe2c0e8685ec685de77fe78945281828454ae6f293c74",
+      "src/extract/dependency_tests.rs": "b398cb81e6fb89638bafa6956e053fa3122edc38f79580e71a56181951e9b20a"
+    }
+  },
+  "binary_hashes": {
+    "baseline": {
+      "cli": "4209efac7a445d7114bf81e5cd171cb72dbd579a86a9abb9a54680fffc48739d",
+      "ci": "eaf055be0e7c94c19415413303ee714f64d50356e35356c3f0e43ac0d32e0a05"
+    },
+    "previous": {
+      "cli": "6821ca42304c1a919393b019cee7e2843b88c1d0d4d53383e831343e1cd34a22",
+      "ci": "1b6c17b515442db4123da869043ad1b7bd62924bad06170c62206a161d0be720"
+    },
+    "final": {
+      "cli": "cd877fd222c21642cab36d5dc734c0ac26bb962663707ec61a0d4b11950b74a1",
+      "ci": "000704c7eb20e6cb3b4be9cdce849c8a85b43624c3b23c47aa586340ddd608b2"
+    }
+  },
+  "fixtures": {
+    "extract-vec-bench.egg": "8597fa40b15f694d4f2613af8d6e411c2ceae6f3ef540342b8fca427d4027b18",
+    "vector-no-extract.egg": "b7574a2e37e5889c04fda05688347df9eb57592c323d9d4859e3a3f5feaba287",
+    "container-rebuild.egg": "986b09e45501c602e03c06157a8c1d6d5181f325d48cc9972f3d4983ac21ea36"
+  },
+  "order": [
+    "baseline",
+    "previous",
+    "final",
+    "final",
+    "previous",
+    "baseline",
+    "baseline",
+    "previous",
+    "final",
+    "final",
+    "previous",
+    "baseline",
+    "baseline",
+    "previous",
+    "final",
+    "final",
+    "previous",
+    "baseline"
+  ]
+}

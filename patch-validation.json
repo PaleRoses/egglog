@@ -1,0 +1,6 @@
+{
+  "base": "b912caa9694c0c029f9ae3d91db0adc8824e14f5",
+  "patch_sha256": "7ee3dc31a1ab61fd20fb925c0fb7400772ced5d68b0837d61cfa71babe07222b",
+  "clean_apply": true,
+  "reconstructed_files_match_tested_hashes": true
+}

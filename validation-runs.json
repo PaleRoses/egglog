@@ -1,0 +1,114 @@
+[
+  {
+    "label": "full-make-test",
+    "command": [
+      "make",
+      "test"
+    ],
+    "cwd": "$STUDY/candidate",
+    "env": {
+      "CARGO_TARGET_DIR": "$SCRATCH/egglog-transfer-20260930-target",
+      "RUST_LOG": "error",
+      "RUSTUP_TOOLCHAIN": "1.91.0",
+      "CARGO_BUILD_JOBS": "1",
+      "NEXTEST_TEST_THREADS": "1",
+      "RUST_TEST_THREADS": "1",
+      "RAYON_NUM_THREADS": "1",
+      "CARGO_NET_OFFLINE": "true"
+    },
+    "extra": null,
+    "exit": 0,
+    "seconds": 1060.1832125000656,
+    "utc": "2026-10-01T11:37:38.265608+00:00",
+    "log": "logs/full-make-test.log",
+    "original_log_sha256": "476ffcf9c7750e45ed7362321a986b5ee86830107eabf6d373006884e807ce30",
+    "published_log_sha256": "6eeab36252c90c629533d54f17652ddc2a3fc80c9b18def7e877c5827fc055ee"
+  },
+  {
+    "label": "nits",
+    "command": [
+      "make",
+      "nits"
+    ],
+    "cwd": "$STUDY/candidate",
+    "env": {
+      "CARGO_TARGET_DIR": "$SCRATCH/egglog-transfer-20260930-target",
+      "RUST_LOG": "error",
+      "RUSTUP_TOOLCHAIN": "1.91.0",
+      "CARGO_BUILD_JOBS": "1",
+      "NEXTEST_TEST_THREADS": "1",
+      "RUST_TEST_THREADS": "1",
+      "RAYON_NUM_THREADS": "1",
+      "CARGO_NET_OFFLINE": "true"
+    },
+    "extra": null,
+    "exit": 0,
+    "seconds": 23.971330458065495,
+    "utc": "2026-10-01T11:55:18.417862+00:00",
+    "log": "logs/nits.log",
+    "original_log_sha256": "e9919e8e54501c5264502d95e54858b653821be699a270ef97f616ddf9c931bf",
+    "published_log_sha256": "945b2dd56cd723f30d24095ea01c1a3d3f947ce25d86d90a186302cb9e486fd8"
+  },
+  {
+    "label": "no-default-features",
+    "command": [
+      "cargo",
+      "check",
+      "--locked",
+      "--offline",
+      "-p",
+      "egglog",
+      "--no-default-features",
+      "--lib"
+    ],
+    "cwd": "$STUDY/candidate",
+    "env": {
+      "CARGO_TARGET_DIR": "$SCRATCH/egglog-transfer-20260930-target",
+      "RUST_LOG": "error",
+      "RUSTUP_TOOLCHAIN": "1.91.0",
+      "CARGO_BUILD_JOBS": "1",
+      "NEXTEST_TEST_THREADS": "1",
+      "RUST_TEST_THREADS": "1",
+      "RAYON_NUM_THREADS": "1",
+      "CARGO_NET_OFFLINE": "true"
+    },
+    "extra": null,
+    "exit": 0,
+    "seconds": 4.336731750052422,
+    "utc": "2026-10-01T11:55:42.389716+00:00",
+    "log": "logs/no-default-features.log",
+    "original_log_sha256": "9cda32f61c5cd223d5711ec5776c35e8c678ccad7b36bd7687c55045d598b2d5",
+    "published_log_sha256": "975504cac2629d9fa98f07763e775fcf217e0be1776b87eb73b8fb28b7f4018a"
+  },
+  {
+    "label": "wasm",
+    "command": [
+      "make",
+      "test"
+    ],
+    "cwd": "$STUDY/candidate/wasm-example",
+    "env": {
+      "CARGO_TARGET_DIR": "$SCRATCH/egglog-transfer-20260930-target",
+      "RUST_LOG": "error",
+      "RUSTUP_TOOLCHAIN": "1.91.0",
+      "CARGO_BUILD_JOBS": "1",
+      "NEXTEST_TEST_THREADS": "1",
+      "RUST_TEST_THREADS": "1",
+      "RAYON_NUM_THREADS": "1",
+      "CARGO_NET_OFFLINE": "true",
+      "BINARYEN_CORES": "1",
+      "WASM_PACK_CACHE": "$SCRATCH/egglog-extraction-20260930-astra/extraction-experiment/regression-study-20261001/results/full-suite/wasm-pack-cache"
+    },
+    "extra": {
+      "PATH": "$SCRATCH/egglog-extraction-20260930-astra/extraction-experiment/regression-study-20261001/results/full-suite/helpers/wasm-bindgen-0.2.104-aarch64-apple-darwin:$SCRATCH/egglog-extraction-20260930-astra/extraction-experiment/regression-study-20261001/results/full-suite/helpers/binaryen-version_117/bin:$USER_HOME/.elan/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/pkg/env/global/bin:$USER_HOME/.codex/tmp/arg0/codex-arg0SY8wpZ:/Applications/ChatGPT.app/Contents/Resources/codex-cli/codex-path:$USER_HOME/.bun/bin:$USER_HOME/Library/pnpm:$USER_HOME/.nvm/versions/node/v22.15.1/bin:/opt/homebrew/opt/llvm/bin:$USER_HOME/.elan/bin:/opt/homebrew/bin:/opt/homebrew/sbin:$USER_HOME/.cargo/bin:$USER_HOME/.cabal/bin:$USER_HOME/.ghcup/bin:$USER_HOME/.local/bin:$USER_HOME/.local/bin",
+      "BINARYEN_CORES": "1",
+      "WASM_PACK_CACHE": "$SCRATCH/egglog-extraction-20260930-astra/extraction-experiment/regression-study-20261001/results/full-suite/wasm-pack-cache"
+    },
+    "exit": 0,
+    "seconds": 79.15070000011474,
+    "utc": "2026-10-01T11:55:46.727752+00:00",
+    "log": "logs/wasm.log",
+    "original_log_sha256": "27bfb3e2519f4af3b63714df5a2acf958ba91d009970087e1209cd476ed11c8a",
+    "published_log_sha256": "43d510bb51df62e2682d7d13a5b19b48f619e908fd773ed05e4e02ec1366f297"
+  }
+]

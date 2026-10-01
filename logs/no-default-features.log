@@ -1,0 +1,7 @@
+    Checking egglog-reports v3.0.0 ($STUDY/candidate/egglog-reports)
+    Checking egglog-core-relations v3.0.0 ($STUDY/candidate/core-relations)
+   Compiling egglog v3.0.0 ($STUDY/candidate)
+    Checking egglog-bridge v3.0.0 ($STUDY/candidate/egglog-bridge)
+    Checking egglog-ast v3.0.0 ($STUDY/candidate/egglog-ast)
+   Compiling egglog-add-primitive v3.0.0 ($STUDY/candidate/src/sort/add_primitive)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 4.30s

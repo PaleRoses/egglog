@@ -1,0 +1,23 @@
+RUSTFLAGS='--cfg getrandom_backend="wasm_js"' wasm-pack build --target nodejs
+[INFO]: 🎯  Checking for the Wasm target...
+[INFO]: 🌀  Compiling to Wasm...
+   Compiling egglog-numeric-id v3.0.0 ($STUDY/candidate/numeric-id)
+   Compiling egglog-concurrency v3.0.0 ($STUDY/candidate/concurrency)
+   Compiling egglog-reports v3.0.0 ($STUDY/candidate/egglog-reports)
+   Compiling egglog-union-find v3.0.0 ($STUDY/candidate/union-find)
+   Compiling egglog-core-relations v3.0.0 ($STUDY/candidate/core-relations)
+   Compiling egglog v3.0.0 ($STUDY/candidate)
+   Compiling egglog-bridge v3.0.0 ($STUDY/candidate/egglog-bridge)
+   Compiling egglog-ast v3.0.0 ($STUDY/candidate/egglog-ast)
+   Compiling egglog-add-primitive v3.0.0 ($STUDY/candidate/src/sort/add_primitive)
+   Compiling egglog-wasm-example v0.0.0 ($STUDY/candidate/wasm-example)
+    Finished `release` profile [optimized] target(s) in 56.57s
+[INFO]: found wasm-opt at "$SCRATCH/egglog-extraction-20260930-astra/extraction-experiment/regression-study-20261001/results/full-suite/helpers/binaryen-version_117/bin/wasm-opt"
+[INFO]: Optimizing wasm binaries with `wasm-opt`...
+[INFO]: Optional field missing from Cargo.toml: 'description'. This is not necessary, but recommended
+[INFO]: License key is set in Cargo.toml but no LICENSE file(s) were found; Please add the LICENSE file(s) to your project directory
+[INFO]: ✨   Done in 1m 18s
+[INFO]: 📦   Your wasm pkg is ready to publish at $STUDY/candidate/wasm-example/pkg.
+[WARN]: ⚠️   failed to get wasm-pack version
+node run.js
+Successfully ran egglog program

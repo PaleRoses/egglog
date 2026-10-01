@@ -1,0 +1,49 @@
+{
+  "files": [
+    {
+      "file": ".github/workflows/build.yml",
+      "added": 1,
+      "removed": 0,
+      "net": 1
+    },
+    {
+      "file": "CHANGELOG.md",
+      "added": 2,
+      "removed": 0,
+      "net": 2
+    },
+    {
+      "file": "benches/rust_api_benchmarking.rs",
+      "added": 62,
+      "removed": 0,
+      "net": 62
+    },
+    {
+      "file": "src/extract.rs",
+      "added": 302,
+      "removed": 175,
+      "net": 127
+    },
+    {
+      "file": "tests/extraction_proof_mode.rs",
+      "added": 85,
+      "removed": 0,
+      "net": 85
+    },
+    {
+      "file": "tests/integration_test.rs",
+      "added": 223,
+      "removed": 15,
+      "net": 208
+    },
+    {
+      "file": "src/extract/dependency_tests.rs",
+      "added": 172,
+      "removed": 0,
+      "net": 172
+    }
+  ],
+  "added": 847,
+  "removed": 190,
+  "net": 657
+}

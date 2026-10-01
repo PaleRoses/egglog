@@ -1,0 +1,29 @@
+{
+  "full_observables_equal": true,
+  "costs": [
+    11,
+    11
+  ],
+  "fixture_sha256": "3d6573760e6e8924cc1cce08876107b0e32faee940b39f310041b798c6d7cb08",
+  "commands": {
+    "baseline": [
+      "$STUDY/bin/baseline-extraction_holdouts",
+      "--fixture",
+      "$STUDY/diagnostics/order-sensitive-fixtures/fixed-first-delayed-second.json",
+      "--lifetimes",
+      "1",
+      "--results",
+      "$STUDY/results/order-sensitive/baseline.json"
+    ],
+    "candidate": [
+      "$STUDY/bin/candidate-extraction_holdouts",
+      "--fixture",
+      "$STUDY/diagnostics/order-sensitive-fixtures/fixed-first-delayed-second.json",
+      "--lifetimes",
+      "1",
+      "--results",
+      "$STUDY/results/order-sensitive/candidate.json"
+    ]
+  },
+  "note": "Independent reviewer fixture; correctness only, these timings are not benchmark evidence"
+}

@@ -1,0 +1,506 @@
+{
+  "mixed-adverse-0": {
+    "baseline": {
+      "preparation": {
+        "alloc_requests": 406,
+        "alloc_zeroed_requests": 0,
+        "allocation_requests_total": 406,
+        "realloc_requests": 201,
+        "dealloc_requests": 301,
+        "alloc_requested_bytes": 17981,
+        "alloc_zeroed_requested_bytes": 0,
+        "allocation_requested_bytes_total": 17981,
+        "realloc_new_requested_bytes": 10176,
+        "realloc_old_requested_bytes": 5064,
+        "deallocated_requested_bytes": 16112,
+        "failed_allocation_or_realloc_requests": 0,
+        "live_requested_bytes_at_start": 512850,
+        "live_requested_bytes_at_end": 519831,
+        "live_requested_bytes_delta": 6981,
+        "peak_live_requested_bytes": 522323,
+        "peak_increment_from_start_bytes": 9473,
+        "instrumented_elapsed_ns": 52791
+      },
+      "calls": {
+        "measurement": "one separate untimed pass",
+        "preparation": {
+          "base_value": 22,
+          "enode_annotation": 126,
+          "container_annotation": 0,
+          "enode_fold": 126,
+          "container_fold": 0
+        },
+        "reconstruction": {
+          "base_value": 0,
+          "enode_annotation": 0,
+          "container_annotation": 0,
+          "enode_fold": 0,
+          "container_fold": 0
+        },
+        "attempted_row_evaluations": null,
+        "row_counter_note": "Successful callbacks only; unavailable child rows do not reach enode annotation/fold. Test-side implementation counters supply row attempts/scans/dependencies."
+      }
+    },
+    "candidate": {
+      "preparation": {
+        "alloc_requests": 227,
+        "alloc_zeroed_requests": 0,
+        "allocation_requests_total": 227,
+        "realloc_requests": 109,
+        "dealloc_requests": 169,
+        "alloc_requested_bytes": 14493,
+        "alloc_zeroed_requested_bytes": 0,
+        "allocation_requested_bytes_total": 14493,
+        "realloc_new_requested_bytes": 5888,
+        "realloc_old_requested_bytes": 2944,
+        "deallocated_requested_bytes": 12761,
+        "failed_allocation_or_realloc_requests": 0,
+        "live_requested_bytes_at_start": 513057,
+        "live_requested_bytes_at_end": 517733,
+        "live_requested_bytes_delta": 4676,
+        "peak_live_requested_bytes": 521126,
+        "peak_increment_from_start_bytes": 8069,
+        "instrumented_elapsed_ns": 40916
+      },
+      "calls": {
+        "measurement": "one separate untimed pass",
+        "preparation": {
+          "base_value": 8,
+          "enode_annotation": 47,
+          "container_annotation": 0,
+          "enode_fold": 47,
+          "container_fold": 0
+        },
+        "reconstruction": {
+          "base_value": 0,
+          "enode_annotation": 0,
+          "container_annotation": 0,
+          "enode_fold": 0,
+          "container_fold": 0
+        },
+        "attempted_row_evaluations": null,
+        "row_counter_note": "Successful callbacks only; unavailable child rows do not reach enode annotation/fold. Test-side implementation counters supply row attempts/scans/dependencies."
+      }
+    }
+  },
+  "mixed-adverse-1000": {
+    "baseline": {
+      "preparation": {
+        "alloc_requests": 11309,
+        "alloc_zeroed_requests": 0,
+        "allocation_requests_total": 11309,
+        "realloc_requests": 3,
+        "dealloc_requests": 11202,
+        "alloc_requested_bytes": 368412,
+        "alloc_zeroed_requested_bytes": 0,
+        "allocation_requested_bytes_total": 368412,
+        "realloc_new_requested_bytes": 672,
+        "realloc_old_requested_bytes": 312,
+        "deallocated_requested_bytes": 361776,
+        "failed_allocation_or_realloc_requests": 0,
+        "live_requested_bytes_at_start": 1040196,
+        "live_requested_bytes_at_end": 1047192,
+        "live_requested_bytes_delta": 6996,
+        "peak_live_requested_bytes": 1049620,
+        "peak_increment_from_start_bytes": 9424,
+        "instrumented_elapsed_ns": 560291
+      },
+      "calls": {
+        "measurement": "one separate untimed pass",
+        "preparation": {
+          "base_value": 11022,
+          "enode_annotation": 11126,
+          "container_annotation": 0,
+          "enode_fold": 11126,
+          "container_fold": 0
+        },
+        "reconstruction": {
+          "base_value": 0,
+          "enode_annotation": 0,
+          "container_annotation": 0,
+          "enode_fold": 0,
+          "container_fold": 0
+        },
+        "attempted_row_evaluations": null,
+        "row_counter_note": "Successful callbacks only; unavailable child rows do not reach enode annotation/fold. Test-side implementation counters supply row attempts/scans/dependencies."
+      }
+    },
+    "candidate": {
+      "preparation": {
+        "alloc_requests": 5177,
+        "alloc_zeroed_requests": 0,
+        "allocation_requests_total": 5177,
+        "realloc_requests": 7,
+        "dealloc_requests": 5118,
+        "alloc_requested_bytes": 173685,
+        "alloc_zeroed_requested_bytes": 0,
+        "allocation_requested_bytes_total": 173685,
+        "realloc_new_requested_bytes": 992,
+        "realloc_old_requested_bytes": 496,
+        "deallocated_requested_bytes": 169497,
+        "failed_allocation_or_realloc_requests": 0,
+        "live_requested_bytes_at_start": 1040406,
+        "live_requested_bytes_at_end": 1045090,
+        "live_requested_bytes_delta": 4684,
+        "peak_live_requested_bytes": 1048475,
+        "peak_increment_from_start_bytes": 8069,
+        "instrumented_elapsed_ns": 266709
+      },
+      "calls": {
+        "measurement": "one separate untimed pass",
+        "preparation": {
+          "base_value": 5008,
+          "enode_annotation": 5047,
+          "container_annotation": 0,
+          "enode_fold": 5047,
+          "container_fold": 0
+        },
+        "reconstruction": {
+          "base_value": 0,
+          "enode_annotation": 0,
+          "container_annotation": 0,
+          "enode_fold": 0,
+          "container_fold": 0
+        },
+        "attempted_row_evaluations": null,
+        "row_counter_note": "Successful callbacks only; unavailable child rows do not reach enode annotation/fold. Test-side implementation counters supply row attempts/scans/dependencies."
+      }
+    }
+  },
+  "mixed-adverse-10000": {
+    "baseline": {
+      "preparation": {
+        "alloc_requests": 110309,
+        "alloc_zeroed_requests": 0,
+        "allocation_requests_total": 110309,
+        "realloc_requests": 3,
+        "dealloc_requests": 110202,
+        "alloc_requested_bytes": 3536412,
+        "alloc_zeroed_requested_bytes": 0,
+        "allocation_requested_bytes_total": 3536412,
+        "realloc_new_requested_bytes": 672,
+        "realloc_old_requested_bytes": 312,
+        "deallocated_requested_bytes": 3529776,
+        "failed_allocation_or_realloc_requests": 0,
+        "live_requested_bytes_at_start": 6852807,
+        "live_requested_bytes_at_end": 6859803,
+        "live_requested_bytes_delta": 6996,
+        "peak_live_requested_bytes": 6862231,
+        "peak_increment_from_start_bytes": 9424,
+        "instrumented_elapsed_ns": 5559208
+      },
+      "calls": {
+        "measurement": "one separate untimed pass",
+        "preparation": {
+          "base_value": 110022,
+          "enode_annotation": 110126,
+          "container_annotation": 0,
+          "enode_fold": 110126,
+          "container_fold": 0
+        },
+        "reconstruction": {
+          "base_value": 0,
+          "enode_annotation": 0,
+          "container_annotation": 0,
+          "enode_fold": 0,
+          "container_fold": 0
+        },
+        "attempted_row_evaluations": null,
+        "row_counter_note": "Successful callbacks only; unavailable child rows do not reach enode annotation/fold. Test-side implementation counters supply row attempts/scans/dependencies."
+      }
+    },
+    "candidate": {
+      "preparation": {
+        "alloc_requests": 50177,
+        "alloc_zeroed_requests": 0,
+        "allocation_requests_total": 50177,
+        "realloc_requests": 7,
+        "dealloc_requests": 50118,
+        "alloc_requested_bytes": 1613685,
+        "alloc_zeroed_requested_bytes": 0,
+        "allocation_requested_bytes_total": 1613685,
+        "realloc_new_requested_bytes": 992,
+        "realloc_old_requested_bytes": 496,
+        "deallocated_requested_bytes": 1609497,
+        "failed_allocation_or_realloc_requests": 0,
+        "live_requested_bytes_at_start": 6853018,
+        "live_requested_bytes_at_end": 6857702,
+        "live_requested_bytes_delta": 4684,
+        "peak_live_requested_bytes": 6861087,
+        "peak_increment_from_start_bytes": 8069,
+        "instrumented_elapsed_ns": 2493875
+      },
+      "calls": {
+        "measurement": "one separate untimed pass",
+        "preparation": {
+          "base_value": 50008,
+          "enode_annotation": 50047,
+          "container_annotation": 0,
+          "enode_fold": 50047,
+          "container_fold": 0
+        },
+        "reconstruction": {
+          "base_value": 0,
+          "enode_annotation": 0,
+          "container_annotation": 0,
+          "enode_fold": 0,
+          "container_fold": 0
+        },
+        "attempted_row_evaluations": null,
+        "row_counter_note": "Successful callbacks only; unavailable child rows do not reach enode annotation/fold. Test-side implementation counters supply row attempts/scans/dependencies."
+      }
+    }
+  },
+  "mixed-favorable-0": {
+    "baseline": {
+      "preparation": {
+        "alloc_requests": 262,
+        "alloc_zeroed_requests": 0,
+        "allocation_requests_total": 262,
+        "realloc_requests": 59,
+        "dealloc_requests": 157,
+        "alloc_requested_bytes": 14653,
+        "alloc_zeroed_requested_bytes": 0,
+        "allocation_requested_bytes_total": 14653,
+        "realloc_new_requested_bytes": 3648,
+        "realloc_old_requested_bytes": 1800,
+        "deallocated_requested_bytes": 9520,
+        "failed_allocation_or_realloc_requests": 0,
+        "live_requested_bytes_at_start": 513190,
+        "live_requested_bytes_at_end": 520171,
+        "live_requested_bytes_delta": 6981,
+        "peak_live_requested_bytes": 522982,
+        "peak_increment_from_start_bytes": 9792,
+        "instrumented_elapsed_ns": 13667
+      },
+      "calls": {
+        "measurement": "one separate untimed pass",
+        "preparation": {
+          "base_value": 6,
+          "enode_annotation": 54,
+          "container_annotation": 0,
+          "enode_fold": 54,
+          "container_fold": 0
+        },
+        "reconstruction": {
+          "base_value": 0,
+          "enode_annotation": 0,
+          "container_annotation": 0,
+          "enode_fold": 0,
+          "container_fold": 0
+        },
+        "attempted_row_evaluations": null,
+        "row_counter_note": "Successful callbacks only; unavailable child rows do not reach enode annotation/fold. Test-side implementation counters supply row attempts/scans/dependencies."
+      }
+    },
+    "candidate": {
+      "preparation": {
+        "alloc_requests": 171,
+        "alloc_zeroed_requests": 0,
+        "allocation_requests_total": 171,
+        "realloc_requests": 58,
+        "dealloc_requests": 113,
+        "alloc_requested_bytes": 10873,
+        "alloc_zeroed_requested_bytes": 0,
+        "allocation_requested_bytes_total": 10873,
+        "realloc_new_requested_bytes": 3168,
+        "realloc_old_requested_bytes": 1584,
+        "deallocated_requested_bytes": 7781,
+        "failed_allocation_or_realloc_requests": 0,
+        "live_requested_bytes_at_start": 513399,
+        "live_requested_bytes_at_end": 518075,
+        "live_requested_bytes_delta": 4676,
+        "peak_live_requested_bytes": 520120,
+        "peak_increment_from_start_bytes": 6721,
+        "instrumented_elapsed_ns": 12250
+      },
+      "calls": {
+        "measurement": "one separate untimed pass",
+        "preparation": {
+          "base_value": 6,
+          "enode_annotation": 54,
+          "container_annotation": 0,
+          "enode_fold": 54,
+          "container_fold": 0
+        },
+        "reconstruction": {
+          "base_value": 0,
+          "enode_annotation": 0,
+          "container_annotation": 0,
+          "enode_fold": 0,
+          "container_fold": 0
+        },
+        "attempted_row_evaluations": null,
+        "row_counter_note": "Successful callbacks only; unavailable child rows do not reach enode annotation/fold. Test-side implementation counters supply row attempts/scans/dependencies."
+      }
+    }
+  },
+  "mixed-favorable-1000": {
+    "baseline": {
+      "preparation": {
+        "alloc_requests": 3237,
+        "alloc_zeroed_requests": 0,
+        "allocation_requests_total": 3237,
+        "realloc_requests": 5,
+        "dealloc_requests": 3130,
+        "alloc_requested_bytes": 110236,
+        "alloc_zeroed_requested_bytes": 0,
+        "allocation_requested_bytes_total": 110236,
+        "realloc_new_requested_bytes": 1056,
+        "realloc_old_requested_bytes": 504,
+        "deallocated_requested_bytes": 103792,
+        "failed_allocation_or_realloc_requests": 0,
+        "live_requested_bytes_at_start": 1040536,
+        "live_requested_bytes_at_end": 1047532,
+        "live_requested_bytes_delta": 6996,
+        "peak_live_requested_bytes": 1050292,
+        "peak_increment_from_start_bytes": 9756,
+        "instrumented_elapsed_ns": 188500
+      },
+      "calls": {
+        "measurement": "one separate untimed pass",
+        "preparation": {
+          "base_value": 3006,
+          "enode_annotation": 3054,
+          "container_annotation": 0,
+          "enode_fold": 3054,
+          "container_fold": 0
+        },
+        "reconstruction": {
+          "base_value": 0,
+          "enode_annotation": 0,
+          "container_annotation": 0,
+          "enode_fold": 0,
+          "container_fold": 0
+        },
+        "attempted_row_evaluations": null,
+        "row_counter_note": "Successful callbacks only; unavailable child rows do not reach enode annotation/fold. Test-side implementation counters supply row attempts/scans/dependencies."
+      }
+    },
+    "candidate": {
+      "preparation": {
+        "alloc_requests": 3145,
+        "alloc_zeroed_requests": 0,
+        "allocation_requests_total": 3145,
+        "realloc_requests": 4,
+        "dealloc_requests": 3086,
+        "alloc_requested_bytes": 106449,
+        "alloc_zeroed_requested_bytes": 0,
+        "allocation_requested_bytes_total": 106449,
+        "realloc_new_requested_bytes": 576,
+        "realloc_old_requested_bytes": 288,
+        "deallocated_requested_bytes": 102053,
+        "failed_allocation_or_realloc_requests": 0,
+        "live_requested_bytes_at_start": 1040748,
+        "live_requested_bytes_at_end": 1045432,
+        "live_requested_bytes_delta": 4684,
+        "peak_live_requested_bytes": 1047421,
+        "peak_increment_from_start_bytes": 6673,
+        "instrumented_elapsed_ns": 153125
+      },
+      "calls": {
+        "measurement": "one separate untimed pass",
+        "preparation": {
+          "base_value": 3006,
+          "enode_annotation": 3054,
+          "container_annotation": 0,
+          "enode_fold": 3054,
+          "container_fold": 0
+        },
+        "reconstruction": {
+          "base_value": 0,
+          "enode_annotation": 0,
+          "container_annotation": 0,
+          "enode_fold": 0,
+          "container_fold": 0
+        },
+        "attempted_row_evaluations": null,
+        "row_counter_note": "Successful callbacks only; unavailable child rows do not reach enode annotation/fold. Test-side implementation counters supply row attempts/scans/dependencies."
+      }
+    }
+  },
+  "mixed-favorable-10000": {
+    "baseline": {
+      "preparation": {
+        "alloc_requests": 30237,
+        "alloc_zeroed_requests": 0,
+        "allocation_requests_total": 30237,
+        "realloc_requests": 5,
+        "dealloc_requests": 30130,
+        "alloc_requested_bytes": 974236,
+        "alloc_zeroed_requested_bytes": 0,
+        "allocation_requested_bytes_total": 974236,
+        "realloc_new_requested_bytes": 1056,
+        "realloc_old_requested_bytes": 504,
+        "deallocated_requested_bytes": 967792,
+        "failed_allocation_or_realloc_requests": 0,
+        "live_requested_bytes_at_start": 6853147,
+        "live_requested_bytes_at_end": 6860143,
+        "live_requested_bytes_delta": 6996,
+        "peak_live_requested_bytes": 6862903,
+        "peak_increment_from_start_bytes": 9756,
+        "instrumented_elapsed_ns": 1581333
+      },
+      "calls": {
+        "measurement": "one separate untimed pass",
+        "preparation": {
+          "base_value": 30006,
+          "enode_annotation": 30054,
+          "container_annotation": 0,
+          "enode_fold": 30054,
+          "container_fold": 0
+        },
+        "reconstruction": {
+          "base_value": 0,
+          "enode_annotation": 0,
+          "container_annotation": 0,
+          "enode_fold": 0,
+          "container_fold": 0
+        },
+        "attempted_row_evaluations": null,
+        "row_counter_note": "Successful callbacks only; unavailable child rows do not reach enode annotation/fold. Test-side implementation counters supply row attempts/scans/dependencies."
+      }
+    },
+    "candidate": {
+      "preparation": {
+        "alloc_requests": 30145,
+        "alloc_zeroed_requests": 0,
+        "allocation_requests_total": 30145,
+        "realloc_requests": 4,
+        "dealloc_requests": 30086,
+        "alloc_requested_bytes": 970449,
+        "alloc_zeroed_requested_bytes": 0,
+        "allocation_requested_bytes_total": 970449,
+        "realloc_new_requested_bytes": 576,
+        "realloc_old_requested_bytes": 288,
+        "deallocated_requested_bytes": 966053,
+        "failed_allocation_or_realloc_requests": 0,
+        "live_requested_bytes_at_start": 6853360,
+        "live_requested_bytes_at_end": 6858044,
+        "live_requested_bytes_delta": 4684,
+        "peak_live_requested_bytes": 6860033,
+        "peak_increment_from_start_bytes": 6673,
+        "instrumented_elapsed_ns": 1493541
+      },
+      "calls": {
+        "measurement": "one separate untimed pass",
+        "preparation": {
+          "base_value": 30006,
+          "enode_annotation": 30054,
+          "container_annotation": 0,
+          "enode_fold": 30054,
+          "container_fold": 0
+        },
+        "reconstruction": {
+          "base_value": 0,
+          "enode_annotation": 0,
+          "container_annotation": 0,
+          "enode_fold": 0,
+          "container_fold": 0
+        },
+        "attempted_row_evaluations": null,
+        "row_counter_note": "Successful callbacks only; unavailable child rows do not reach enode annotation/fold. Test-side implementation counters supply row attempts/scans/dependencies."
+      }
+    }
+  }
+}
