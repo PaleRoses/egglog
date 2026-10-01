@@ -4,17 +4,8 @@
   "native_skipped": 0,
   "doctests_distinct_passed": 37,
   "doctests_distinct_ignored": 8,
-  "gates": [
-    "full-make-test",
-    "nits",
-    "no-default-features",
-    "wasm"
-  ],
-  "source_unchanged": true,
-  "summary": "Summary [ 812.224s] 1315 tests run: 1315 passed (2 slow), 0 skipped",
-  "commands_and_logs": "validation-runs.json",
-  "limits": [
-    "macOS arm64 only; Docker daemon unavailable and not started",
-    "Remote CI, coverage upload and full performance matrix not run"
-  ]
+  "production_and_benchmarks_unchanged": true,
+  "source_unchanged_during_validation": true,
+  "commands_and_logs": "test-compaction/validation-runs.json",
+  "summary": "Summary [ 810.136s] 1315 tests run: 1315 passed (2 slow), 0 skipped"
 }

@@ -1,0 +1,13 @@
+   Compiling egglog v3.0.0 ($STUDY/candidate)
+    Finished `release` profile [optimized] target(s) in 51.54s
+     Running tests/integration_test.rs ($SCRATCH/egglog-transfer-20260930-target/release/deps/integration_test-12447dec0a94e932)
+
+running 5 tests
+test tree_extractor_preserves_tied_parent_after_delayed_child_improvement ... ok
+test tree_extractor_reschedules_nested_map_keys_with_captured_functions ... ok
+test tree_extractor_reuses_costs_for_multiple_values ... ok
+test tree_extractor_signed_cost_matches_reconstructed_tree ... ok
+test tree_extractor_supports_reachable_sorts_and_zero_variants ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 57 filtered out; finished in 0.01s
+

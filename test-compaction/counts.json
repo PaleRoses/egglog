@@ -1,0 +1,18 @@
+{
+  "files": {
+    "tests/extraction_proof_mode.rs": {
+      "before": 232,
+      "after": 217
+    },
+    "tests/integration_test.rs": {
+      "before": 2094,
+      "after": 2053
+    },
+    "src/extract/dependency_tests.rs": {
+      "before": 172,
+      "after": 143
+    }
+  },
+  "lines_removed": 85,
+  "production_unchanged": true
+}

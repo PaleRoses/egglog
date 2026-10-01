@@ -1,0 +1,1535 @@
+CARGO_PROFILE_RELEASE_DEBUG_ASSERTIONS=true cargo test --doc --release --workspace
+warning: doc tests are not supported for crate type(s) `cdylib` in package `egglog-wasm-example`
+   Compiling egglog-concurrency v3.0.0 ($STUDY/candidate/concurrency)
+   Compiling egglog-reports v3.0.0 ($STUDY/candidate/egglog-reports)
+   Compiling egglog-union-find v3.0.0 ($STUDY/candidate/union-find)
+   Compiling egglog-core-relations v3.0.0 ($STUDY/candidate/core-relations)
+   Compiling egglog-bridge v3.0.0 ($STUDY/candidate/egglog-bridge)
+   Compiling egglog-ast v3.0.0 ($STUDY/candidate/egglog-ast)
+   Compiling egglog-add-primitive v3.0.0 ($STUDY/candidate/src/sort/add_primitive)
+   Compiling egglog v3.0.0 ($STUDY/candidate)
+    Finished `release` profile [optimized] target(s) in 1m 20s
+   Doc-tests egglog
+
+running 13 tests
+test src/ast/proof_global_remover.rs - ast::proof_global_remover::remove_globals (line 24) ... ignored
+test src/ast/remove_globals.rs - ast::remove_globals::remove_globals (line 23) ... ignored
+test src/ast/remove_globals.rs - ast::remove_globals::remove_globals (line 28) ... ignored
+test src/ast/remove_globals.rs - ast::remove_globals::remove_globals (line 35) ... ignored
+test src/ast/remove_globals.rs - ast::remove_globals::remove_globals (line 40) ... ignored
+test src/lib.rs - EGraph::update (line 2494) ... ok
+test src/lib.rs - ExtensionStateValue (line 296) ... ok
+test src/prelude.rs - prelude (line 105) ... ok
+test src/prelude.rs - prelude (line 12) ... ok
+test src/prelude.rs - prelude (line 3) ... ok
+test src/prelude.rs - prelude (line 45) ... ok
+test src/prelude.rs - prelude::rule (line 385) ... ok
+test src/prelude.rs - prelude::rust_rule (line 520) ... ok
+
+test result: ok. 8 passed; 0 failed; 5 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+
+running 5 tests
+test src/ast/proof_global_remover.rs - ast::proof_global_remover::remove_globals (line 20) ... ignored
+test src/exec_state.rs - exec_state::FullState (line 822) - compile fail ... ok
+test src/exec_state.rs - exec_state::PureState (line 776) - compile fail ... ok
+test src/exec_state.rs - exec_state::PureState (line 784) - compile fail ... ok
+test src/exec_state.rs - exec_state::WriteState (line 808) - compile fail ... ok
+
+test result: ok. 4 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.25s
+
+all doctests ran in 1.29s; merged doctests compilation took 0.47s
+   Doc-tests egglog_add_primitive
+
+running 2 tests
+test src/sort/add_primitive/src/lib.rs - add_literal_prim (line 467) ... ignored
+test src/sort/add_primitive/src/lib.rs - add_primitive_with_validator (line 11) ... ignored
+
+test result: ok. 0 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests egglog_ast
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests egglog_bridge
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests egglog_concurrency
+
+running 18 tests
+test concurrency/src/shared_arena.rs - shared_arena::Handle<'arena>::alloc (line 171) ... ok
+test concurrency/src/shared_arena.rs - shared_arena::SharedArena (line 41) ... ok
+test concurrency/src/shared_arena.rs - shared_arena::SharedArena (line 66) ... ok
+test concurrency/src/shared_arena.rs - shared_arena::SharedArena::new (line 93) ... ok
+test concurrency/src/shared_arena.rs - shared_arena::SharedArena::new_handle (line 115) ... ok
+test concurrency/src/threadpool/mod.rs - threadpool (line 25) ... ok
+test concurrency/src/threadpool/mod.rs - threadpool::Scope (line 1149) ... ok
+test concurrency/src/threadpool/mod.rs - threadpool::Scope<'scope>::spawn (line 1188) ... ok
+test concurrency/src/threadpool/mod.rs - threadpool::ThreadPool (line 295) ... ok
+test concurrency/src/threadpool/mod.rs - threadpool::ThreadPool::install (line 384) ... ok
+test concurrency/src/threadpool/mod.rs - threadpool::ThreadPool::new (line 317) ... ok
+test concurrency/src/threadpool/mod.rs - threadpool::ThreadPool::parallel_for_each (line 444) ... ok
+test concurrency/src/threadpool/mod.rs - threadpool::ThreadPool::scope (line 412) ... ok
+test concurrency/src/threadpool/mod.rs - threadpool::ThreadPool::thread_count (line 343) ... ok
+test concurrency/src/threadpool/mod.rs - threadpool::current_num_threads (line 201) ... ok
+test concurrency/src/threadpool/mod.rs - threadpool::scope (line 256) ... ok
+test concurrency/src/threadpool/mod.rs - threadpool::scope (line 274) - should panic ... ok
+test concurrency/src/threadpool/mod.rs - threadpool::without_current_pool (line 225) ... ok
+
+test result: ok. 18 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+
+
+running 5 tests
+test concurrency/src/shared_arena.rs - shared_arena::Handle<'arena>::alloc_layout (line 210) - compile fail ... ok
+test concurrency/src/shared_arena.rs - shared_arena::SharedArena::new_handle (line 130) - compile fail ... ok
+test concurrency/src/threadpool/mod.rs - threadpool (line 48) - compile fail ... ok
+test concurrency/src/threadpool/mod.rs - threadpool (line 67) - compile fail ... ok
+test concurrency/src/threadpool/mod.rs - threadpool (line 84) - compile fail ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.11s
+
+all doctests ran in 0.66s; merged doctests compilation took 0.27s
+   Doc-tests egglog_core_relations
+
+running 2 tests
+test core-relations/src/base_values/unboxed.rs - base_values::unboxed::()::try_unbox (line 58) ... ok
+test core-relations/src/base_values/unboxed.rs - base_values::unboxed::bool::try_box (line 42) ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests egglog_numeric_id
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests egglog_reports
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests egglog_union_find
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+CARGO_PROFILE_RELEASE_DEBUG_ASSERTIONS=true cargo insta test --test-runner nextest --release --workspace  --unreferenced reject
+   Compiling egglog-wasm-example v0.0.0 ($STUDY/candidate/wasm-example)
+   Compiling egglog-concurrency v3.0.0 ($STUDY/candidate/concurrency)
+   Compiling egglog-core-relations v3.0.0 ($STUDY/candidate/core-relations)
+   Compiling egglog-union-find v3.0.0 ($STUDY/candidate/union-find)
+   Compiling egglog v3.0.0 ($STUDY/candidate)
+   Compiling egglog-bridge v3.0.0 ($STUDY/candidate/egglog-bridge)
+   Compiling egglog-ast v3.0.0 ($STUDY/candidate/egglog-ast)
+   Compiling egglog-reports v3.0.0 ($STUDY/candidate/egglog-reports)
+   Compiling egglog-add-primitive v3.0.0 ($STUDY/candidate/src/sort/add_primitive)
+   Compiling egglog-numeric-id v3.0.0 ($STUDY/candidate/numeric-id)
+    Finished `release` profile [optimized] target(s) in 2m 27s
+────────────
+ Nextest run ID 6dfc3295-adac-47a4-8ab2-911d0faf1fb6 with nextest profile: default
+    Starting 1315 tests across 31 binaries
+        PASS [   0.008s] (   1/1315) egglog ast::parse::tests::rust_span_display
+        PASS [   0.008s] (   2/1315) egglog ast::parse::tests::test_file_command_display_roundtrip
+        PASS [   0.007s] (   3/1315) egglog ast::parse::tests::test_parser_display_roundtrip
+        PASS [   0.007s] (   4/1315) egglog ast::parse::tests::test_parser_macros
+        PASS [   0.009s] (   5/1315) egglog cli::tests::test_repl
+        PASS [   0.008s] (   6/1315) egglog cli::tests::test_should_eval
+        PASS [   0.007s] (   7/1315) egglog core::tests::test_remove_dup_vars_basic
+        PASS [   0.007s] (   8/1315) egglog core::tests::test_remove_dup_vars_fixpoint
+        PASS [   0.007s] (   9/1315) egglog core::tests::test_remove_dup_vars_with_actions_using_removed_var
+        PASS [   0.080s] (  10/1315) egglog extract::dependency_tests::scheduler_matches_full_scans_across_cutoff_and_scan_orders
+        PASS [   0.008s] (  11/1315) egglog extract::dependency_tests::scheduler_preserves_convergent_self_improvements
+        PASS [   0.008s] (  12/1315) egglog prelude::tests::rust_api_macros
+        PASS [   0.008s] (  13/1315) egglog prelude::tests::rust_api_query
+        PASS [   0.008s] (  14/1315) egglog prelude::tests::rust_api_rule
+        PASS [   0.009s] (  15/1315) egglog prelude::tests::rust_api_rust_rule
+        PASS [   0.007s] (  16/1315) egglog proofs::proof_extractor::tests::active_roots_break_cycles
+        PASS [   0.007s] (  17/1315) egglog proofs::proof_extractor::tests::canonicalizes_when_exact_root_is_subsumed
+        PASS [   0.007s] (  18/1315) egglog proofs::proof_extractor::tests::extracts_container_root
+        PASS [   0.008s] (  19/1315) egglog proofs::proof_extractor::tests::extracts_direct_constructor_root
+        PASS [   0.020s] (  20/1315) egglog proofs::proof_tests::tests::doc_example_add_function1
+        PASS [   0.020s] (  21/1315) egglog proofs::proof_tests::tests::doc_example_add_function2
+        PASS [   0.010s] (  22/1315) egglog proofs::proof_tests::tests::proof_encoding_preserves_naive
+        PASS [   0.011s] (  23/1315) egglog proofs::proof_tests::tests::proof_mode_allows_eq_container_primitive_results_in_facts
+        PASS [   0.011s] (  24/1315) egglog proofs::proof_tests::tests::proof_mode_allows_eq_sort_primitive_results_in_facts
+        PASS [   0.012s] (  25/1315) egglog proofs::proof_tests::tests::proof_mode_query_constructed_container_not_used_in_action
+        PASS [   0.009s] (  26/1315) egglog proofs::proof_tests::tests::proof_support_rejects_naive_eq_sort_primitive_results_in_facts
+        PASS [   0.010s] (  27/1315) egglog proofs::proof_tests::tests::proof_support_rejects_query_constructed_container_used_in_action
+        PASS [   0.337s] (  28/1315) egglog proofs::proof_tests::tests::unsafe_seminaive_matches_naive
+        PASS [   0.009s] (  29/1315) egglog scheduler::test::test_failed_action_is_rebuilt_and_consumed
+        PASS [   0.008s] (  30/1315) egglog scheduler::test::test_filter_matches_sees_fresh_sizes
+        PASS [   0.009s] (  31/1315) egglog scheduler::test::test_first_n_scheduler
+        PASS [   0.008s] (  32/1315) egglog scheduler::test::test_match_size_with_no_free_vars
+        PASS [   0.007s] (  33/1315) egglog scheduler::test::test_naive_scheduler_preserves_residual_matches_without_requerying
+        PASS [   0.007s] (  34/1315) egglog scheduler::test::test_no_free_vars_rule_applies_actions
+        PASS [   0.013s] (  35/1315) egglog scheduler::test::test_num_nodes_uses_constructor_semantics_in_all_encodings
+        PASS [   0.009s] (  36/1315) egglog scheduler::test::test_rule_modes_requery_and_read_earlier_actions
+        PASS [   0.007s] (  37/1315) egglog scheduler::test::test_scheduler_internal_table_does_not_shadow_a_constructor
+        PASS [   0.008s] (  38/1315) egglog scheduler::test::test_scheduler_preserves_include_subsumed_mode
+        PASS [   0.008s] (  39/1315) egglog scheduler::test::test_scheduler_progress_is_separate_from_database_progress
+        PASS [   0.007s] (  40/1315) egglog scheduler::test::test_scheduler_sees_egraph_size
+        PASS [   0.007s] (  41/1315) egglog scheduler::test::test_step_rules_with_scheduler_unknown_ruleset
+        PASS [   0.008s] (  42/1315) egglog sort::vec::tests::test_vec_make_expr
+        PASS [   0.008s] (  43/1315) egglog termdag::tests::test_app_var_lit
+        PASS [   0.008s] (  44/1315) egglog termdag::tests::test_ast_cmp
+        PASS [   0.007s] (  45/1315) egglog termdag::tests::test_lookup
+        PASS [   0.007s] (  46/1315) egglog termdag::tests::test_match_term_app
+        PASS [   0.007s] (  47/1315) egglog termdag::tests::test_multiline_parentheses_share_final_line
+        PASS [   0.008s] (  48/1315) egglog termdag::tests::test_to_from_expr
+        PASS [   0.008s] (  49/1315) egglog termdag::tests::test_to_string
+        PASS [   0.007s] (  50/1315) egglog termdag::tests::test_to_string_with_let_inlines_small_terms
+        PASS [   0.007s] (  51/1315) egglog termdag::tests::test_to_string_with_let_shares_large_terms
+        PASS [   0.008s] (  52/1315) egglog termdag::tests::test_to_string_with_let_wraps_long_lines
+        PASS [   0.008s] (  53/1315) egglog tests::proof_support_accepts_container_sort_declarations
+        PASS [   0.007s] (  54/1315) egglog tests::proof_support_accepts_set_primitive_validators
+        PASS [   0.008s] (  55/1315) egglog tests::proof_support_rejects_set_get
+        PASS [   0.008s] (  56/1315) egglog tests::proof_support_rejects_unstable_fn_primitives_without_validators
+        PASS [   0.008s] (  57/1315) egglog tests::test_duplicate_rule_name_errors
+        PASS [   0.007s] (  58/1315) egglog tests::test_egraph_send_sync
+        PASS [   0.008s] (  59/1315) egglog tests::test_extension_state_clones_and_restores_with_egraph
+        PASS [   0.007s] (  60/1315) egglog tests::test_extract_negative_variants_errors
+        PASS [   0.008s] (  61/1315) egglog tests::test_fresh_name_collision_globals
+        PASS [   0.008s] (  62/1315) egglog tests::test_input_missing_file_errors
+        PASS [   0.007s] (  63/1315) egglog tests::test_run_undefined_ruleset_errors
+        PASS [   0.008s] (  64/1315) egglog tests::test_subsumed_unextractable_rebuild_arg
+        PASS [   0.008s] (  65/1315) egglog tests::test_subsumed_unextractable_rebuild_self
+        PASS [   0.007s] (  66/1315) egglog tests::test_typecheck_expr_with_bindings_and_output_rejects_duplicate_bindings
+        PASS [   0.007s] (  67/1315) egglog tests::test_typecheck_expr_with_bindings_and_output_rejects_mismatch
+        PASS [   0.008s] (  68/1315) egglog tests::test_typecheck_expr_with_bindings_and_output_rewrites_globals
+        PASS [   0.007s] (  69/1315) egglog tests::test_typecheck_expr_with_bindings_and_output_uses_context
+        PASS [   0.008s] (  70/1315) egglog tests::test_typecheck_expr_with_bindings_and_output_uses_explicit_bindings
+        PASS [   0.007s] (  71/1315) egglog tests::test_user_defined_primitive
+        PASS [   0.006s] (  72/1315) egglog typechecking::test::test_arity_mismatch
+        PASS [   0.010s] (  73/1315) egglog::api_const_fold const_fold_collapses_addition_chain
+        PASS [   0.008s] (  74/1315) egglog::api_const_fold const_fold_is_a_no_op_when_no_pair_of_nums
+        PASS [   0.009s] (  75/1315) egglog::api_fact_ops test_add_function_errors
+        PASS [   0.007s] (  76/1315) egglog::api_fact_ops test_constructor_add_returns_id
+        PASS [   0.007s] (  77/1315) egglog::api_fact_ops test_constructor_enodes_on_empty_table
+        PASS [   0.007s] (  78/1315) egglog::api_fact_ops test_contains_function
+        PASS [   0.007s] (  79/1315) egglog::api_fact_ops test_eclass_of_constructor
+        PASS [   0.007s] (  80/1315) egglog::api_fact_ops test_eclass_of_on_function_errors
+        PASS [   0.007s] (  81/1315) egglog::api_fact_ops test_higher_arity_function
+        PASS [   0.007s] (  82/1315) egglog::api_fact_ops test_lookup_missing_returns_none
+        PASS [   0.007s] (  83/1315) egglog::api_fact_ops test_lookup_on_constructor_errors
+        PASS [   0.008s] (  84/1315) egglog::api_fact_ops test_lookup_unknown_table_errors
+        PASS [   0.008s] (  85/1315) egglog::api_fact_ops test_relation_add_and_contains
+        PASS [   0.007s] (  86/1315) egglog::api_fact_ops test_relation_remove
+        PASS [   0.008s] (  87/1315) egglog::api_fact_ops test_remove_function
+        PASS [   0.007s] (  88/1315) egglog::api_fact_ops test_set_constructor_errors
+        PASS [   0.007s] (  89/1315) egglog::api_fact_ops test_set_replaces_function_value
+        PASS [   0.008s] (  90/1315) egglog::api_fact_ops test_set_then_lookup_function
+        PASS [   0.008s] (  91/1315) egglog::api_fact_ops test_set_unknown_table_errors
+        PASS [   0.008s] (  92/1315) egglog::api_fact_ops test_string_inputs
+        PASS [   0.008s] (  93/1315) egglog::api_fact_ops test_subsume_predicted_constructor_rows
+        PASS [   0.008s] (  94/1315) egglog::api_fact_ops test_union_same_value_is_noop
+        PASS [   0.008s] (  95/1315) egglog::api_fact_ops test_wrong_arity_errors
+        PASS [   0.008s] (  96/1315) egglog::api_fact_ops test_wrong_arity_on_add_errors
+        PASS [   0.010s] (  97/1315) egglog::api_introspection a_popped_table_is_missing_rather_than_stale
+        PASS [   0.008s] (  98/1315) egglog::api_introspection a_primitive_can_resolve_a_signature_from_inside_a_rule
+        PASS [   0.007s] (  99/1315) egglog::api_introspection a_reused_table_id_does_not_revive_a_popped_name
+        PASS [   0.008s] ( 100/1315) egglog::api_introspection constructor_enodes_for_eclass_agrees_with_a_filtered_scan
+        PASS [   0.007s] ( 101/1315) egglog::api_introspection constructor_enodes_for_eclass_rejects_a_function_table
+        PASS [   0.008s] ( 102/1315) egglog::api_introspection eclass_enodes_spans_every_constructor
+        PASS [   0.007s] ( 103/1315) egglog::api_introspection map_container_remaps_contents
+        PASS [   0.007s] ( 104/1315) egglog::api_introspection schema_accessors_report_the_declaration
+        PASS [   0.008s] ( 105/1315) egglog::api_introspection table_sizes_skips_a_popped_table_from_inside_a_rule
+        PASS [   0.010s] ( 106/1315) egglog::api_proofs query_with_proofs_enabled_errors_with_query_api_name
+        PASS [   0.008s] ( 107/1315) egglog::api_proofs rust_rule_full_with_proofs_enabled_errors
+        PASS [   0.008s] ( 108/1315) egglog::api_proofs rust_rule_with_proofs_enabled_errors
+        PASS [   0.008s] ( 109/1315) egglog::api_proofs update_with_proofs_enabled_errors
+        PASS [   0.011s] ( 110/1315) egglog::api_query constructor_enodes_basic
+        PASS [   0.008s] ( 111/1315) egglog::api_query constructor_enodes_relation
+        PASS [   0.007s] ( 112/1315) egglog::api_query constructor_enodes_reports_subsumed
+        PASS [   0.007s] ( 113/1315) egglog::api_query function_entries_empty
+        PASS [   0.007s] ( 114/1315) egglog::api_query function_entries_i64_to_i64
+        PASS [   0.008s] ( 115/1315) egglog::api_query function_entries_missing_table_errors
+        PASS [   0.008s] ( 116/1315) egglog::api_query function_entries_on_constructor_errors
+        PASS [   0.007s] ( 117/1315) egglog::api_query query_pattern_relation_one_var
+        PASS [   0.008s] ( 118/1315) egglog::api_query query_pattern_two_vars
+        PASS [   0.008s] ( 119/1315) egglog::api_query query_pattern_zero_vars_match
+        PASS [   0.016s] ( 120/1315) egglog::container_rebuild map_rebuild_collapse_proof_mode
+        PASS [   0.012s] ( 121/1315) egglog::container_rebuild map_rebuild_noncollapse_proof_mode
+        PASS [   0.010s] ( 122/1315) egglog::container_rebuild map_rebuild_term_only
+        PASS [   0.013s] ( 123/1315) egglog::container_rebuild multiset_rebuild_merge_counts_proof_mode
+        PASS [   0.012s] ( 124/1315) egglog::container_rebuild multiset_rebuild_proof_mode
+        PASS [   0.011s] ( 125/1315) egglog::container_rebuild multiset_rebuild_term_only
+        PASS [   0.012s] ( 126/1315) egglog::container_rebuild nested_vec_rebuild_proof_mode
+        PASS [   0.010s] ( 127/1315) egglog::container_rebuild nested_vec_rebuild_term_only
+        PASS [   0.012s] ( 128/1315) egglog::container_rebuild pair_rebuild_proof_mode
+        PASS [   0.010s] ( 129/1315) egglog::container_rebuild pair_rebuild_term_only
+        PASS [   0.012s] ( 130/1315) egglog::container_rebuild set_rebuild_collapse_proof_mode
+        PASS [   0.011s] ( 131/1315) egglog::container_rebuild set_rebuild_collapse_term_only
+        PASS [   0.012s] ( 132/1315) egglog::container_rebuild set_rebuild_noncollapse_proof_mode
+        PASS [   0.012s] ( 133/1315) egglog::container_rebuild set_rebuild_reorder_proof_mode
+        PASS [   0.012s] ( 134/1315) egglog::container_rebuild vec_rebuild_proof_mode
+        PASS [   0.011s] ( 135/1315) egglog::container_rebuild vec_rebuild_term_only
+        PASS [   0.284s] ( 136/1315) egglog::extraction_proof_mode extraction_preserves_wide_rows_and_aliases_after_delayed_dependencies
+        PASS [   0.019s] ( 137/1315) egglog::extraction_proof_mode test_extraction_same_with_proof_mode
+        PASS [   0.012s] ( 138/1315) egglog::extraction_proof_mode test_extraction_same_with_proof_mode_using_rule_macro
+        PASS [   0.878s] ( 139/1315) egglog::files antiunify
+        PASS [   0.868s] ( 140/1315) egglog::files antiunify_32threads
+        PASS [   0.874s] ( 141/1315) egglog::files antiunify_desugar
+        PASS [   0.888s] ( 142/1315) egglog::files antiunify_desugar_proof_testing
+        PASS [   0.877s] ( 143/1315) egglog::files antiunify_proof_testing
+        PASS [   0.887s] ( 144/1315) egglog::files antiunify_proofs
+        PASS [   0.882s] ( 145/1315) egglog::files antiunify_term_encoding
+        PASS [   0.868s] ( 146/1315) egglog::files array
+        PASS [   0.879s] ( 147/1315) egglog::files array_32threads
+        PASS [   0.882s] ( 148/1315) egglog::files array_desugar
+        PASS [   0.885s] ( 149/1315) egglog::files bdd
+        PASS [   0.874s] ( 150/1315) egglog::files bdd_32threads
+        PASS [   0.893s] ( 151/1315) egglog::files bdd_desugar
+        PASS [   0.887s] ( 152/1315) egglog::files before_proofs
+        PASS [   0.861s] ( 153/1315) egglog::files before_proofs_32threads
+        PASS [   0.880s] ( 154/1315) egglog::files before_proofs_desugar
+        PASS [   0.879s] ( 155/1315) egglog::files bignum
+        PASS [   0.877s] ( 156/1315) egglog::files bignum_32threads
+        PASS [   0.871s] ( 157/1315) egglog::files bignum_desugar
+        PASS [   0.866s] ( 158/1315) egglog::files bind_prim_result_desugar_proof_testing
+        PASS [   0.867s] ( 159/1315) egglog::files bind_prim_result_proof_testing
+        PASS [   0.894s] ( 160/1315) egglog::files bind_prim_result_proofs
+        PASS [   0.897s] ( 161/1315) egglog::files birewrite
+        PASS [   0.880s] ( 162/1315) egglog::files birewrite_32threads
+        PASS [   0.868s] ( 163/1315) egglog::files birewrite_desugar
+        PASS [   0.875s] ( 164/1315) egglog::files birewrite_desugar_proof_testing
+        PASS [   0.870s] ( 165/1315) egglog::files birewrite_proof_testing
+        PASS [   0.893s] ( 166/1315) egglog::files birewrite_proofs
+        PASS [   0.890s] ( 167/1315) egglog::files birewrite_term_encoding
+        PASS [   0.872s] ( 168/1315) egglog::files bitwise
+        PASS [   0.856s] ( 169/1315) egglog::files bitwise_32threads
+        PASS [   0.866s] ( 170/1315) egglog::files bitwise_desugar
+        PASS [   0.880s] ( 171/1315) egglog::files bitwise_desugar_proof_testing
+        PASS [   0.868s] ( 172/1315) egglog::files bitwise_proof_testing
+        PASS [   0.863s] ( 173/1315) egglog::files bitwise_proofs
+        PASS [   0.867s] ( 174/1315) egglog::files bitwise_term_encoding
+        PASS [   0.880s] ( 175/1315) egglog::files bool
+        PASS [   0.873s] ( 176/1315) egglog::files bool_32threads
+        PASS [   0.880s] ( 177/1315) egglog::files bool_desugar
+        PASS [   0.865s] ( 178/1315) egglog::files calc
+        PASS [   0.870s] ( 179/1315) egglog::files calc_32threads
+        PASS [   0.893s] ( 180/1315) egglog::files calc_desugar
+        PASS [   0.911s] ( 181/1315) egglog::files calc_desugar_proof_testing
+        PASS [   0.900s] ( 182/1315) egglog::files calc_proof_testing
+        PASS [   0.905s] ( 183/1315) egglog::files calc_proofs
+        PASS [   0.896s] ( 184/1315) egglog::files calc_term_encoding
+        PASS [   0.888s] ( 185/1315) egglog::files combinators
+        PASS [   0.866s] ( 186/1315) egglog::files combinators_32threads
+        PASS [   0.880s] ( 187/1315) egglog::files combinators_desugar
+        PASS [   0.950s] ( 188/1315) egglog::files combinators_desugar_proof_testing
+        PASS [   0.932s] ( 189/1315) egglog::files combinators_proof_testing
+        PASS [   0.927s] ( 190/1315) egglog::files combinators_proofs
+        PASS [   0.910s] ( 191/1315) egglog::files combinators_term_encoding
+        PASS [   0.894s] ( 192/1315) egglog::files combined_nested
+        PASS [   0.880s] ( 193/1315) egglog::files combined_nested_32threads
+        PASS [   0.889s] ( 194/1315) egglog::files combined_nested_desugar
+        PASS [   0.877s] ( 195/1315) egglog::files combined_nested_desugar_proof_testing
+        PASS [   0.872s] ( 196/1315) egglog::files combined_nested_proof_testing
+        PASS [   0.884s] ( 197/1315) egglog::files combined_nested_proofs
+        PASS [   0.894s] ( 198/1315) egglog::files combined_nested_term_encoding
+        PASS [   0.883s] ( 199/1315) egglog::files commute_collapse_desugar_proof_testing
+        PASS [   0.881s] ( 200/1315) egglog::files commute_collapse_proof_testing
+        PASS [   0.899s] ( 201/1315) egglog::files commute_collapse_proofs
+        PASS [   0.911s] ( 202/1315) egglog::files complex_merge_func
+        PASS [   0.870s] ( 203/1315) egglog::files complex_merge_func_32threads
+        PASS [   0.878s] ( 204/1315) egglog::files complex_merge_func_desugar
+        PASS [   0.869s] ( 205/1315) egglog::files complex_merge_func_desugar_proof_testing
+        PASS [   0.870s] ( 206/1315) egglog::files complex_merge_func_proof_testing
+        PASS [   0.882s] ( 207/1315) egglog::files complex_merge_func_proofs
+        PASS [   0.876s] ( 208/1315) egglog::files complex_merge_func_term_encoding
+        PASS [   0.873s] ( 209/1315) egglog::files complex_merge_prim
+        PASS [   0.860s] ( 210/1315) egglog::files complex_merge_prim_32threads
+        PASS [   0.881s] ( 211/1315) egglog::files complex_merge_prim_desugar
+        PASS [   0.893s] ( 212/1315) egglog::files container_fail
+        PASS [   0.865s] ( 213/1315) egglog::files container_fail_32threads
+        PASS [   0.876s] ( 214/1315) egglog::files container_fail_desugar
+        PASS [   0.879s] ( 215/1315) egglog::files container_proofs
+        PASS [   0.882s] ( 216/1315) egglog::files container_proofs_32threads
+        PASS [   0.894s] ( 217/1315) egglog::files container_proofs_desugar
+        PASS [   0.948s] ( 218/1315) egglog::files container_proofs_desugar_proof_testing
+        PASS [   0.905s] ( 219/1315) egglog::files container_proofs_proof_testing
+        PASS [   0.918s] ( 220/1315) egglog::files container_proofs_proofs
+        PASS [   0.900s] ( 221/1315) egglog::files container_proofs_term_encoding
+        PASS [   0.867s] ( 222/1315) egglog::files container_rebuild
+        PASS [   0.860s] ( 223/1315) egglog::files container_rebuild_32threads
+        PASS [   0.909s] ( 224/1315) egglog::files container_rebuild_desugar
+        PASS [   0.866s] ( 225/1315) egglog::files container_set_collapse_desugar_proof_testing
+        PASS [   0.857s] ( 226/1315) egglog::files container_set_collapse_proof_testing
+        PASS [   0.869s] ( 227/1315) egglog::files container_set_collapse_proofs
+        PASS [   0.875s] ( 228/1315) egglog::files cyk
+        PASS [   0.876s] ( 229/1315) egglog::files cyk_32threads
+        PASS [   0.869s] ( 230/1315) egglog::files cyk_desugar
+        PASS [   0.919s] ( 231/1315) egglog::files cykjson
+        PASS [   0.906s] ( 232/1315) egglog::files cykjson_32threads
+        PASS [   0.932s] ( 233/1315) egglog::files cykjson_desugar
+        PASS [   0.866s] ( 234/1315) egglog::files datatypes
+        PASS [   0.852s] ( 235/1315) egglog::files datatypes_32threads
+        PASS [   0.872s] ( 236/1315) egglog::files datatypes_desugar
+        PASS [   0.877s] ( 237/1315) egglog::files datatypes_desugar_proof_testing
+        PASS [   0.872s] ( 238/1315) egglog::files datatypes_proof_testing
+        PASS [   0.870s] ( 239/1315) egglog::files datatypes_proofs
+        PASS [   0.870s] ( 240/1315) egglog::files datatypes_term_encoding
+        PASS [   0.865s] ( 241/1315) egglog::files delete
+        PASS [   0.868s] ( 242/1315) egglog::files delete_32threads
+        PASS [   0.866s] ( 243/1315) egglog::files delete_desugar
+        PASS [   2.361s] ( 244/1315) egglog::files eggcc_2mm
+        PASS [   2.837s] ( 245/1315) egglog::files eggcc_2mm_32threads
+        PASS [   2.418s] ( 246/1315) egglog::files eggcc_2mm_desugar
+        PASS [   1.206s] ( 247/1315) egglog::files eggcc_extraction
+        PASS [   1.319s] ( 248/1315) egglog::files eggcc_extraction_32threads
+        PASS [   1.209s] ( 249/1315) egglog::files eggcc_extraction_desugar
+        PASS [   0.878s] ( 250/1315) egglog::files eqsat_basic
+        PASS [   0.865s] ( 251/1315) egglog::files eqsat_basic_32threads
+        PASS [   0.873s] ( 252/1315) egglog::files eqsat_basic_desugar
+        PASS [   0.876s] ( 253/1315) egglog::files eqsat_basic_desugar_proof_testing
+        PASS [   0.882s] ( 254/1315) egglog::files eqsat_basic_multiset
+        PASS [   0.862s] ( 255/1315) egglog::files eqsat_basic_multiset_32threads
+        PASS [   0.882s] ( 256/1315) egglog::files eqsat_basic_multiset_desugar
+        PASS [   0.874s] ( 257/1315) egglog::files eqsat_basic_proof_desugar_proof_testing
+        PASS [   0.883s] ( 258/1315) egglog::files eqsat_basic_proof_proof_testing
+        PASS [   0.886s] ( 259/1315) egglog::files eqsat_basic_proof_proofs
+        PASS [   0.867s] ( 260/1315) egglog::files eqsat_basic_proof_testing
+        PASS [   0.871s] ( 261/1315) egglog::files eqsat_basic_proofs
+        PASS [   0.880s] ( 262/1315) egglog::files eqsat_basic_term_encoding
+        PASS [   0.895s] ( 263/1315) egglog::files eqsolve
+        PASS [   0.879s] ( 264/1315) egglog::files eqsolve_32threads
+        PASS [   0.879s] ( 265/1315) egglog::files eqsolve_desugar
+        SLOW [>  5.000s] (─────────) egglog::files eqsolve_desugar_proof_testing
+        SLOW [> 10.000s] (─────────) egglog::files eqsolve_desugar_proof_testing
+        SLOW [> 15.000s] (─────────) egglog::files eqsolve_desugar_proof_testing
+        SLOW [> 20.000s] (─────────) egglog::files eqsolve_desugar_proof_testing
+        SLOW [> 25.000s] (─────────) egglog::files eqsolve_desugar_proof_testing
+        PASS [  27.349s] ( 266/1315) egglog::files eqsolve_desugar_proof_testing
+        SLOW [>  5.000s] (─────────) egglog::files eqsolve_proof_testing
+        SLOW [> 10.000s] (─────────) egglog::files eqsolve_proof_testing
+        SLOW [> 15.000s] (─────────) egglog::files eqsolve_proof_testing
+        SLOW [> 20.000s] (─────────) egglog::files eqsolve_proof_testing
+        SLOW [> 25.000s] (─────────) egglog::files eqsolve_proof_testing
+        PASS [  27.467s] ( 267/1315) egglog::files eqsolve_proof_testing
+        PASS [   1.355s] ( 268/1315) egglog::files eqsolve_proofs
+        PASS [   1.041s] ( 269/1315) egglog::files eqsolve_term_encoding
+        PASS [   0.883s] ( 270/1315) egglog::files extract_vec_bench
+        PASS [   0.891s] ( 271/1315) egglog::files extract_vec_bench_32threads
+        PASS [   0.898s] ( 272/1315) egglog::files extract_vec_bench_desugar
+        PASS [   0.871s] ( 273/1315) egglog::files f64
+        PASS [   0.868s] ( 274/1315) egglog::files f64_32threads
+        PASS [   0.875s] ( 275/1315) egglog::files f64_desugar
+        PASS [   0.908s] ( 276/1315) egglog::files f64_desugar_proof_testing
+        PASS [   0.882s] ( 277/1315) egglog::files f64_proof_testing
+        PASS [   0.898s] ( 278/1315) egglog::files f64_proofs
+        PASS [   0.872s] ( 279/1315) egglog::files f64_term_encoding
+        PASS [   0.897s] ( 280/1315) egglog::files factoring_multisets
+        PASS [   0.907s] ( 281/1315) egglog::files factoring_multisets_32threads
+        PASS [   0.882s] ( 282/1315) egglog::files factoring_multisets_desugar
+        PASS [   0.877s] ( 283/1315) egglog::files fail-typecheck/arity_mismatch
+        PASS [   0.865s] ( 284/1315) egglog::files fail-typecheck/arity_mismatch_32threads
+        PASS [   0.888s] ( 285/1315) egglog::files fail-typecheck/conflicting_merge_options
+        PASS [   0.874s] ( 286/1315) egglog::files fail-typecheck/conflicting_merge_options_32threads
+        PASS [   0.887s] ( 287/1315) egglog::files fail-typecheck/constructor_non_sort
+        PASS [   0.872s] ( 288/1315) egglog::files fail-typecheck/constructor_non_sort_32threads
+        PASS [   0.883s] ( 289/1315) egglog::files fail-typecheck/looking_up_nonconstructor_in_action_case_let
+        PASS [   0.877s] ( 290/1315) egglog::files fail-typecheck/looking_up_nonconstructor_in_action_case_let_32threads
+        PASS [   0.875s] ( 291/1315) egglog::files fail-typecheck/looking_up_nonconstructor_in_action_case_set
+        PASS [   0.865s] ( 292/1315) egglog::files fail-typecheck/looking_up_nonconstructor_in_action_case_set_32threads
+        PASS [   0.874s] ( 293/1315) egglog::files fail-typecheck/looking_up_nonconstructor_in_action_case_union
+        PASS [   0.875s] ( 294/1315) egglog::files fail-typecheck/looking_up_nonconstructor_in_action_case_union_32threads
+        PASS [   0.880s] ( 295/1315) egglog::files fail-typecheck/looking_up_nonconstructor_in_birewrite
+        PASS [   0.860s] ( 296/1315) egglog::files fail-typecheck/looking_up_nonconstructor_in_birewrite_32threads
+        PASS [   0.880s] ( 297/1315) egglog::files fail-typecheck/looking_up_nonconstructor_in_rewrite
+        PASS [   0.869s] ( 298/1315) egglog::files fail-typecheck/looking_up_nonconstructor_in_rewrite_32threads
+        PASS [   0.890s] ( 299/1315) egglog::files fail-typecheck/naive_and_unsafe_seminaive
+        PASS [   0.865s] ( 300/1315) egglog::files fail-typecheck/naive_and_unsafe_seminaive_32threads
+        PASS [   0.878s] ( 301/1315) egglog::files fail-typecheck/repro_containers_disallowed
+        PASS [   0.857s] ( 302/1315) egglog::files fail-typecheck/repro_containers_disallowed_32threads
+        PASS [   0.890s] ( 303/1315) egglog::files fail-typecheck/repro_duplicated_var
+        PASS [   0.872s] ( 304/1315) egglog::files fail-typecheck/repro_duplicated_var_32threads
+        PASS [   0.873s] ( 305/1315) egglog::files fail-typecheck/semi_naive_set_function
+        PASS [   0.862s] ( 306/1315) egglog::files fail-typecheck/semi_naive_set_function_32threads
+        PASS [   0.869s] ( 307/1315) egglog::files fail-typecheck/set_a_primitive
+        PASS [   0.867s] ( 308/1315) egglog::files fail-typecheck/set_a_primitive_32threads
+        PASS [   0.878s] ( 309/1315) egglog::files fail-typecheck/set_constructor_simple
+        PASS [   0.863s] ( 310/1315) egglog::files fail-typecheck/set_constructor_simple_32threads
+        PASS [   0.870s] ( 311/1315) egglog::files fail-typecheck/set_constructor_with_args
+        PASS [   0.864s] ( 312/1315) egglog::files fail-typecheck/set_constructor_with_args_32threads
+        PASS [   0.885s] ( 313/1315) egglog::files fail-typecheck/set_relation
+        PASS [   0.864s] ( 314/1315) egglog::files fail-typecheck/set_relation_32threads
+        PASS [   0.876s] ( 315/1315) egglog::files fail-typecheck/shadow_global
+        PASS [   0.865s] ( 316/1315) egglog::files fail-typecheck/shadow_global_32threads
+        PASS [   0.890s] ( 317/1315) egglog::files fail-typecheck/shadow_global_constructor
+        PASS [   0.861s] ( 318/1315) egglog::files fail-typecheck/shadow_global_constructor_32threads
+        PASS [   0.871s] ( 319/1315) egglog::files fail-typecheck/shadow_local
+        PASS [   0.860s] ( 320/1315) egglog::files fail-typecheck/shadow_local_32threads
+        PASS [   0.872s] ( 321/1315) egglog::files fail-typecheck/shadow_local_constructor
+        PASS [   0.874s] ( 322/1315) egglog::files fail-typecheck/shadow_local_constructor_32threads
+        PASS [   0.871s] ( 323/1315) egglog::files fail-typecheck/shadow_local_global
+        PASS [   0.856s] ( 324/1315) egglog::files fail-typecheck/shadow_local_global_32threads
+        PASS [   0.868s] ( 325/1315) egglog::files fail-typecheck/shadow_local_global_no_prefix
+        PASS [   0.860s] ( 326/1315) egglog::files fail-typecheck/shadow_local_global_no_prefix_32threads
+        PASS [   0.879s] ( 327/1315) egglog::files fail-typecheck/unbound
+        PASS [   0.858s] ( 328/1315) egglog::files fail-typecheck/unbound_32threads
+        PASS [   0.867s] ( 329/1315) egglog::files fail-typecheck/ungrounded_0
+        PASS [   0.858s] ( 330/1315) egglog::files fail-typecheck/ungrounded_0_32threads
+        PASS [   0.880s] ( 331/1315) egglog::files fail-typecheck/ungrounded_1
+        PASS [   0.856s] ( 332/1315) egglog::files fail-typecheck/ungrounded_1_32threads
+        PASS [   0.875s] ( 333/1315) egglog::files fail-typecheck/ungrounded_2
+        PASS [   0.859s] ( 334/1315) egglog::files fail-typecheck/ungrounded_2_32threads
+        PASS [   0.869s] ( 335/1315) egglog::files fail-typecheck/ungrounded_3
+        PASS [   0.870s] ( 336/1315) egglog::files fail-typecheck/ungrounded_3_32threads
+        PASS [   0.868s] ( 337/1315) egglog::files fail-typecheck/ungrounded_4
+        PASS [   0.853s] ( 338/1315) egglog::files fail-typecheck/ungrounded_4_32threads
+        PASS [   0.874s] ( 339/1315) egglog::files fail-typecheck/union_non_sort
+        PASS [   0.876s] ( 340/1315) egglog::files fail-typecheck/union_non_sort_32threads
+        PASS [   0.886s] ( 341/1315) egglog::files fail-typecheck/union_relation
+        PASS [   0.864s] ( 342/1315) egglog::files fail-typecheck/union_relation_32threads
+        PASS [   0.871s] ( 343/1315) egglog::files fail-typecheck/unstable_fn_primitive_missing_partial_arg
+        PASS [   0.853s] ( 344/1315) egglog::files fail-typecheck/unstable_fn_primitive_missing_partial_arg_32threads
+        PASS [   0.884s] ( 345/1315) egglog::files fail-typecheck/unstable_fn_wrong_args
+        PASS [   0.868s] ( 346/1315) egglog::files fail-typecheck/unstable_fn_wrong_args_32threads
+        PASS [   0.875s] ( 347/1315) egglog::files fail-typecheck/unstable_fn_wrong_args_type
+        PASS [   0.860s] ( 348/1315) egglog::files fail-typecheck/unstable_fn_wrong_args_type_32threads
+        PASS [   0.871s] ( 349/1315) egglog::files fail-typecheck/unstable_fn_wrong_return
+        PASS [   0.859s] ( 350/1315) egglog::files fail-typecheck/unstable_fn_wrong_return_32threads
+        PASS [   0.881s] ( 351/1315) egglog::files fail-typecheck/unstable_fn_wrong_return_type
+        PASS [   0.855s] ( 352/1315) egglog::files fail-typecheck/unstable_fn_wrong_return_type_32threads
+        PASS [   0.880s] ( 353/1315) egglog::files fail_wrong_assertion
+        PASS [   0.857s] ( 354/1315) egglog::files fail_wrong_assertion_32threads
+        PASS [   0.870s] ( 355/1315) egglog::files fail_wrong_assertion_desugar
+        PASS [   0.877s] ( 356/1315) egglog::files fail_wrong_assertion_desugar_proof_testing
+        PASS [   0.879s] ( 357/1315) egglog::files fail_wrong_assertion_proof_testing
+        PASS [   0.890s] ( 358/1315) egglog::files fail_wrong_assertion_proofs
+        PASS [   0.872s] ( 359/1315) egglog::files fail_wrong_assertion_term_encoding
+        PASS [   0.873s] ( 360/1315) egglog::files fibonacci
+        PASS [   0.850s] ( 361/1315) egglog::files fibonacci_32threads
+        PASS [   0.863s] ( 362/1315) egglog::files fibonacci_demand
+        PASS [   0.858s] ( 363/1315) egglog::files fibonacci_demand_32threads
+        PASS [   0.876s] ( 364/1315) egglog::files fibonacci_demand_desugar
+        PASS [   0.883s] ( 365/1315) egglog::files fibonacci_demand_desugar_proof_testing
+        PASS [   0.871s] ( 366/1315) egglog::files fibonacci_demand_proof_testing
+        PASS [   0.891s] ( 367/1315) egglog::files fibonacci_demand_proofs
+        PASS [   0.877s] ( 368/1315) egglog::files fibonacci_demand_term_encoding
+        PASS [   0.873s] ( 369/1315) egglog::files fibonacci_desugar
+        PASS [   0.868s] ( 370/1315) egglog::files filter_or_bool_neq
+        PASS [   0.867s] ( 371/1315) egglog::files filter_or_bool_neq_32threads
+        PASS [   0.869s] ( 372/1315) egglog::files filter_or_bool_neq_desugar
+        PASS [   0.893s] ( 373/1315) egglog::files filter_or_bool_neq_desugar_proof_testing
+        PASS [   0.874s] ( 374/1315) egglog::files filter_or_bool_neq_proof_testing
+        PASS [   0.879s] ( 375/1315) egglog::files filter_or_bool_neq_proofs
+        PASS [   0.893s] ( 376/1315) egglog::files filter_or_bool_neq_term_encoding
+        PASS [   0.883s] ( 377/1315) egglog::files fusion
+        PASS [   0.883s] ( 378/1315) egglog::files fusion_32threads
+        PASS [   0.880s] ( 379/1315) egglog::files fusion_desugar
+        PASS [   0.855s] ( 380/1315) egglog::files global_prove_query_desugar_proof_testing
+        PASS [   0.868s] ( 381/1315) egglog::files global_prove_query_proof_testing
+        PASS [   0.876s] ( 382/1315) egglog::files global_prove_query_proofs
+        PASS [   1.521s] ( 383/1315) egglog::files hardboiled_conv1d_128
+        PASS [   1.269s] ( 384/1315) egglog::files hardboiled_conv1d_128_32threads
+        PASS [   1.522s] ( 385/1315) egglog::files hardboiled_conv1d_128_desugar
+        PASS [   1.102s] ( 386/1315) egglog::files hardboiled_conv1d_32
+        PASS [   1.120s] ( 387/1315) egglog::files hardboiled_conv1d_32_32threads
+        PASS [   1.101s] ( 388/1315) egglog::files hardboiled_conv1d_32_desugar
+        PASS [   0.936s] ( 389/1315) egglog::files herbie
+        PASS [   0.960s] ( 390/1315) egglog::files herbie_32threads
+        PASS [   0.938s] ( 391/1315) egglog::files herbie_desugar
+        PASS [   0.883s] ( 392/1315) egglog::files herbie_tutorial
+        PASS [   0.868s] ( 393/1315) egglog::files herbie_tutorial_32threads
+        PASS [   0.879s] ( 394/1315) egglog::files herbie_tutorial_desugar
+        PASS [   0.875s] ( 395/1315) egglog::files hidden_print_size
+        PASS [   0.856s] ( 396/1315) egglog::files hidden_print_size_32threads
+        PASS [   0.875s] ( 397/1315) egglog::files hidden_print_size_desugar
+        PASS [   0.870s] ( 398/1315) egglog::files hidden_print_size_desugar_proof_testing
+        PASS [   0.865s] ( 399/1315) egglog::files hidden_print_size_proof_testing
+        PASS [   0.870s] ( 400/1315) egglog::files hidden_print_size_proofs
+        PASS [   0.865s] ( 401/1315) egglog::files hidden_print_size_term_encoding
+        PASS [   0.868s] ( 402/1315) egglog::files i64
+        PASS [   0.859s] ( 403/1315) egglog::files i64_32threads
+        PASS [   0.880s] ( 404/1315) egglog::files i64_desugar
+        PASS [   0.853s] ( 405/1315) egglog::files i64_desugar_proof_testing
+        PASS [   0.861s] ( 406/1315) egglog::files i64_proof_testing
+        PASS [   0.875s] ( 407/1315) egglog::files i64_proofs
+        PASS [   0.875s] ( 408/1315) egglog::files i64_term_encoding
+        PASS [   0.873s] ( 409/1315) egglog::files include
+        PASS [   0.855s] ( 410/1315) egglog::files include_32threads
+        PASS [   0.871s] ( 411/1315) egglog::files include_desugar
+        PASS [   0.869s] ( 412/1315) egglog::files include_desugar_proof_testing
+        PASS [   0.868s] ( 413/1315) egglog::files include_proof_testing
+        PASS [   0.869s] ( 414/1315) egglog::files include_proofs
+        PASS [   0.883s] ( 415/1315) egglog::files include_term_encoding
+        PASS [   0.890s] ( 416/1315) egglog::files integer_math
+        PASS [   0.879s] ( 417/1315) egglog::files integer_math_32threads
+        PASS [   0.884s] ( 418/1315) egglog::files integer_math_desugar
+        PASS [   0.953s] ( 419/1315) egglog::files integer_math_desugar_proof_testing
+        PASS [   0.919s] ( 420/1315) egglog::files integer_math_proof_testing
+        PASS [   0.930s] ( 421/1315) egglog::files integer_math_proofs
+        PASS [   0.924s] ( 422/1315) egglog::files integer_math_term_encoding
+        PASS [   0.884s] ( 423/1315) egglog::files internal_let
+        PASS [   0.856s] ( 424/1315) egglog::files internal_let_32threads
+        PASS [   0.872s] ( 425/1315) egglog::files internal_let_desugar
+        PASS [   0.867s] ( 426/1315) egglog::files internal_let_desugar_proof_testing
+        PASS [   0.852s] ( 427/1315) egglog::files internal_let_proof_testing
+        PASS [   0.876s] ( 428/1315) egglog::files internal_let_proofs
+        PASS [   0.874s] ( 429/1315) egglog::files internal_let_term_encoding
+        PASS [   0.872s] ( 430/1315) egglog::files intersection
+        PASS [   0.878s] ( 431/1315) egglog::files intersection_32threads
+        PASS [   0.877s] ( 432/1315) egglog::files intersection_desugar
+        PASS [   0.890s] ( 433/1315) egglog::files intersection_desugar_proof_testing
+        PASS [   0.876s] ( 434/1315) egglog::files intersection_proof_testing
+        PASS [   0.900s] ( 435/1315) egglog::files intersection_proofs
+        PASS [   0.884s] ( 436/1315) egglog::files intersection_term_encoding
+        PASS [   0.869s] ( 437/1315) egglog::files interval
+        PASS [   0.852s] ( 438/1315) egglog::files interval_32threads
+        PASS [   0.880s] ( 439/1315) egglog::files interval_desugar
+        PASS [   0.885s] ( 440/1315) egglog::files knapsack
+        PASS [   0.864s] ( 441/1315) egglog::files knapsack_32threads
+        PASS [   0.871s] ( 442/1315) egglog::files knapsack_desugar
+        PASS [   0.888s] ( 443/1315) egglog::files lambda
+        PASS [   0.909s] ( 444/1315) egglog::files lambda_32threads
+        PASS [   0.900s] ( 445/1315) egglog::files lambda_desugar
+        PASS [   0.880s] ( 446/1315) egglog::files levenshtein_distance
+        PASS [   0.860s] ( 447/1315) egglog::files levenshtein_distance_32threads
+        PASS [   0.871s] ( 448/1315) egglog::files levenshtein_distance_desugar
+        PASS [   0.886s] ( 449/1315) egglog::files list
+        PASS [   0.851s] ( 450/1315) egglog::files list_32threads
+        PASS [   0.873s] ( 451/1315) egglog::files list_desugar
+        PASS [   1.451s] ( 452/1315) egglog::files llama
+        PASS [   1.537s] ( 453/1315) egglog::files llama_32threads
+        PASS [   1.498s] ( 454/1315) egglog::files llama_desugar
+        PASS [   0.866s] ( 455/1315) egglog::files looking_up_global
+        PASS [   0.868s] ( 456/1315) egglog::files looking_up_global_32threads
+        PASS [   0.868s] ( 457/1315) egglog::files looking_up_global_desugar
+        PASS [   0.869s] ( 458/1315) egglog::files looking_up_nonconstructor_in_rewrite_good
+        PASS [   0.859s] ( 459/1315) egglog::files looking_up_nonconstructor_in_rewrite_good_32threads
+        PASS [   0.881s] ( 460/1315) egglog::files looking_up_nonconstructor_in_rewrite_good_desugar
+        PASS [   1.007s] ( 461/1315) egglog::files luminal_llama
+        PASS [   1.079s] ( 462/1315) egglog::files luminal_llama_32threads
+        PASS [   1.031s] ( 463/1315) egglog::files luminal_llama_desugar
+        PASS [   0.891s] ( 464/1315) egglog::files map
+        PASS [   0.869s] ( 465/1315) egglog::files map_32threads
+        PASS [   0.871s] ( 466/1315) egglog::files map_desugar
+        PASS [   0.981s] ( 467/1315) egglog::files math
+        PASS [   0.963s] ( 468/1315) egglog::files math_32threads
+        PASS [   0.940s] ( 469/1315) egglog::files math_desugar
+        PASS [   1.716s] ( 470/1315) egglog::files math_microbenchmark
+        PASS [   1.063s] ( 471/1315) egglog::files math_microbenchmark_32threads
+        PASS [   1.710s] ( 472/1315) egglog::files math_microbenchmark_desugar
+        PASS [   0.887s] ( 473/1315) egglog::files matrix
+        PASS [   0.885s] ( 474/1315) egglog::files matrix_32threads
+        PASS [   0.875s] ( 475/1315) egglog::files matrix_desugar
+        PASS [   0.942s] ( 476/1315) egglog::files matrix_desugar_proof_testing
+        PASS [   0.909s] ( 477/1315) egglog::files matrix_proof_testing
+        PASS [   0.933s] ( 478/1315) egglog::files matrix_proofs
+        PASS [   0.907s] ( 479/1315) egglog::files matrix_term_encoding
+        PASS [   0.872s] ( 480/1315) egglog::files merge_during_rebuild
+        PASS [   0.866s] ( 481/1315) egglog::files merge_during_rebuild_32threads
+        PASS [   0.879s] ( 482/1315) egglog::files merge_during_rebuild_desugar
+        PASS [   0.896s] ( 483/1315) egglog::files merge_during_rebuild_desugar_proof_testing
+        PASS [   0.881s] ( 484/1315) egglog::files merge_during_rebuild_proof_testing
+        PASS [   0.890s] ( 485/1315) egglog::files merge_during_rebuild_proofs
+        PASS [   0.884s] ( 486/1315) egglog::files merge_during_rebuild_term_encoding
+        PASS [   0.885s] ( 487/1315) egglog::files merge_read
+        PASS [   0.865s] ( 488/1315) egglog::files merge_read_32threads
+        PASS [   0.882s] ( 489/1315) egglog::files merge_read_desugar
+        PASS [   0.869s] ( 490/1315) egglog::files merge_saturates
+        PASS [   0.873s] ( 491/1315) egglog::files merge_saturates_32threads
+        PASS [   0.912s] ( 492/1315) egglog::files merge_saturates_desugar
+        PASS [   0.867s] ( 493/1315) egglog::files merge_saturates_desugar_proof_testing
+        PASS [   0.869s] ( 494/1315) egglog::files merge_saturates_proof_testing
+        PASS [   0.896s] ( 495/1315) egglog::files merge_saturates_proofs
+        PASS [   0.905s] ( 496/1315) egglog::files merge_saturates_term_encoding
+        PASS [   0.887s] ( 497/1315) egglog::files multiset
+        PASS [   0.882s] ( 498/1315) egglog::files multiset_32threads
+        PASS [   0.876s] ( 499/1315) egglog::files multiset_desugar
+        PASS [   0.883s] ( 500/1315) egglog::files naive_action_lookup
+        PASS [   0.871s] ( 501/1315) egglog::files naive_action_lookup_32threads
+        PASS [   0.874s] ( 502/1315) egglog::files naive_action_lookup_desugar
+        PASS [   0.871s] ( 503/1315) egglog::files name_resolution
+        PASS [   0.852s] ( 504/1315) egglog::files name_resolution_32threads
+        PASS [   0.867s] ( 505/1315) egglog::files name_resolution_desugar
+        PASS [   0.867s] ( 506/1315) egglog::files name_resolution_desugar_proof_testing
+        PASS [   0.868s] ( 507/1315) egglog::files name_resolution_proof_testing
+        PASS [   0.879s] ( 508/1315) egglog::files name_resolution_proofs
+        PASS [   0.870s] ( 509/1315) egglog::files name_resolution_term_encoding
+        PASS [   0.881s] ( 510/1315) egglog::files naturals
+        PASS [   0.857s] ( 511/1315) egglog::files naturals_32threads
+        PASS [   0.870s] ( 512/1315) egglog::files naturals_desugar
+        PASS [   0.895s] ( 513/1315) egglog::files naturals_desugar_proof_testing
+        PASS [   0.895s] ( 514/1315) egglog::files naturals_proof_testing
+        PASS [   0.913s] ( 515/1315) egglog::files naturals_proofs
+        PASS [   0.899s] ( 516/1315) egglog::files naturals_term_encoding
+        PASS [   0.880s] ( 517/1315) egglog::files nested_container_dirty_propagation
+        PASS [   0.869s] ( 518/1315) egglog::files nested_container_dirty_propagation_32threads
+        PASS [   0.894s] ( 519/1315) egglog::files nested_container_dirty_propagation_desugar
+        PASS [   0.881s] ( 520/1315) egglog::files nested_container_dirty_propagation_desugar_proof_testing
+        PASS [   0.869s] ( 521/1315) egglog::files nested_container_dirty_propagation_proof_testing
+        PASS [   0.876s] ( 522/1315) egglog::files nested_container_dirty_propagation_proofs
+        PASS [   0.882s] ( 523/1315) egglog::files nested_container_dirty_propagation_term_encoding
+        PASS [   2.828s] ( 524/1315) egglog::files paged_llama
+        PASS [   2.923s] ( 525/1315) egglog::files paged_llama_32threads
+        PASS [   2.897s] ( 526/1315) egglog::files paged_llama_desugar
+        PASS [   0.866s] ( 527/1315) egglog::files pair
+        PASS [   0.867s] ( 528/1315) egglog::files pair_32threads
+        PASS [   0.882s] ( 529/1315) egglog::files pair_desugar
+        PASS [   0.883s] ( 530/1315) egglog::files path
+        PASS [   0.864s] ( 531/1315) egglog::files path_32threads
+        PASS [   0.872s] ( 532/1315) egglog::files path_desugar
+        PASS [   0.872s] ( 533/1315) egglog::files path_desugar_proof_testing
+        PASS [   0.867s] ( 534/1315) egglog::files path_proof_testing
+        PASS [   0.879s] ( 535/1315) egglog::files path_proofs
+        PASS [   0.874s] ( 536/1315) egglog::files path_term_encoding
+        PASS [   0.874s] ( 537/1315) egglog::files path_union
+        PASS [   0.859s] ( 538/1315) egglog::files path_union_32threads
+        PASS [   0.875s] ( 539/1315) egglog::files path_union_desugar
+        PASS [   0.887s] ( 540/1315) egglog::files path_union_desugar_proof_testing
+        PASS [   0.864s] ( 541/1315) egglog::files path_union_proof_testing
+        PASS [   0.881s] ( 542/1315) egglog::files path_union_proofs
+        PASS [   0.876s] ( 543/1315) egglog::files path_union_term_encoding
+        PASS [   0.885s] ( 544/1315) egglog::files pathproof
+        PASS [   0.871s] ( 545/1315) egglog::files pathproof_32threads
+        PASS [   0.879s] ( 546/1315) egglog::files pathproof_desugar
+        PASS [   0.872s] ( 547/1315) egglog::files pathproof_desugar_proof_testing
+        PASS [   0.869s] ( 548/1315) egglog::files pathproof_proof_testing
+        PASS [   0.885s] ( 549/1315) egglog::files pathproof_proofs
+        PASS [   0.881s] ( 550/1315) egglog::files pathproof_term_encoding
+        PASS [   0.888s] ( 551/1315) egglog::files points_to
+        PASS [   0.860s] ( 552/1315) egglog::files points_to_32threads
+        PASS [   0.868s] ( 553/1315) egglog::files points_to_desugar
+        PASS [   0.909s] ( 554/1315) egglog::files points_to_desugar_proof_testing
+        PASS [   0.879s] ( 555/1315) egglog::files points_to_proof_testing
+        PASS [   0.884s] ( 556/1315) egglog::files points_to_proofs
+        PASS [   0.884s] ( 557/1315) egglog::files points_to_term_encoding
+        PASS [   0.878s] ( 558/1315) egglog::files primitive_args_desugar_proof_testing
+        PASS [   0.866s] ( 559/1315) egglog::files primitive_args_proof_testing
+        PASS [   0.873s] ( 560/1315) egglog::files primitive_args_proofs
+        PASS [   0.872s] ( 561/1315) egglog::files primitives
+        PASS [   0.863s] ( 562/1315) egglog::files primitives_32threads
+        PASS [   0.880s] ( 563/1315) egglog::files primitives_desugar
+        PASS [   0.883s] ( 564/1315) egglog::files primitives_desugar_proof_testing
+        PASS [   0.873s] ( 565/1315) egglog::files primitives_proof_testing
+        PASS [   0.875s] ( 566/1315) egglog::files primitives_proofs
+        PASS [   0.874s] ( 567/1315) egglog::files primitives_term_encoding
+        PASS [   0.876s] ( 568/1315) egglog::files prims
+        PASS [   0.854s] ( 569/1315) egglog::files prims_32threads
+        PASS [   0.888s] ( 570/1315) egglog::files prims_desugar
+        PASS [   0.871s] ( 571/1315) egglog::files print_function
+        PASS [   0.869s] ( 572/1315) egglog::files print_function_32threads
+        PASS [   0.866s] ( 573/1315) egglog::files print_function_desugar
+        PASS [   0.879s] ( 574/1315) egglog::files proof_extract_cost
+        PASS [   0.873s] ( 575/1315) egglog::files proof_extract_cost_32threads
+        PASS [   0.880s] ( 576/1315) egglog::files proof_extract_cost_desugar
+        PASS [   0.873s] ( 577/1315) egglog::files proof_extract_cost_desugar_proof_testing
+        PASS [   0.863s] ( 578/1315) egglog::files proof_extract_cost_proof_testing
+        PASS [   0.899s] ( 579/1315) egglog::files proof_extract_cost_proofs
+        PASS [   0.874s] ( 580/1315) egglog::files proof_extract_cost_term_encoding
+        PASS [   2.168s] ( 581/1315) egglog::files proof_support_snapshot
+        PASS [   0.877s] ( 582/1315) egglog::files push_pop
+        PASS [   0.861s] ( 583/1315) egglog::files push_pop_32threads
+        PASS [   0.874s] ( 584/1315) egglog::files push_pop_desugar
+        PASS [   0.870s] ( 585/1315) egglog::files push_pop_desugar_proof_testing
+        PASS [   0.854s] ( 586/1315) egglog::files push_pop_proof_testing
+        PASS [   0.904s] ( 587/1315) egglog::files push_pop_proofs
+        PASS [   0.882s] ( 588/1315) egglog::files push_pop_term_encoding
+        PASS [   1.225s] ( 589/1315) egglog::files python_array_optimize
+        PASS [   1.463s] ( 590/1315) egglog::files python_array_optimize_32threads
+        PASS [   1.262s] ( 591/1315) egglog::files python_array_optimize_desugar
+        PASS [   1.533s] ( 592/1315) egglog::files qwen
+        PASS [   1.808s] ( 593/1315) egglog::files qwen3_moe
+        PASS [   1.679s] ( 594/1315) egglog::files qwen3_moe_32threads
+        PASS [   1.854s] ( 595/1315) egglog::files qwen3_moe_desugar
+        PASS [   1.511s] ( 596/1315) egglog::files qwen_32threads
+        PASS [   1.575s] ( 597/1315) egglog::files qwen_desugar
+        PASS [   0.881s] ( 598/1315) egglog::files rat_pow_eval
+        PASS [   0.863s] ( 599/1315) egglog::files rat_pow_eval_32threads
+        PASS [   0.879s] ( 600/1315) egglog::files rat_pow_eval_desugar
+        PASS [   0.980s] ( 601/1315) egglog::files rectangle
+        PASS [   1.020s] ( 602/1315) egglog::files rectangle_32threads
+        PASS [   0.983s] ( 603/1315) egglog::files rectangle_desugar
+        PASS [   0.877s] ( 604/1315) egglog::files relation_query_allowed
+        PASS [   0.866s] ( 605/1315) egglog::files relation_query_allowed_32threads
+        PASS [   0.869s] ( 606/1315) egglog::files relation_query_allowed_desugar
+        PASS [   0.890s] ( 607/1315) egglog::files relation_query_allowed_desugar_proof_testing
+        PASS [   0.874s] ( 608/1315) egglog::files relation_query_allowed_proof_testing
+        PASS [   0.881s] ( 609/1315) egglog::files relation_query_allowed_proofs
+        PASS [   0.881s] ( 610/1315) egglog::files relation_query_allowed_term_encoding
+        PASS [   1.121s] ( 611/1315) egglog::files repro_665_set_union
+        PASS [   1.117s] ( 612/1315) egglog::files repro_665_set_union_32threads
+        PASS [   1.131s] ( 613/1315) egglog::files repro_665_set_union_desugar
+        PASS [   1.496s] ( 614/1315) egglog::files repro_665_set_union_desugar_proof_testing
+        PASS [   1.473s] ( 615/1315) egglog::files repro_665_set_union_proof_testing
+        PASS [   1.487s] ( 616/1315) egglog::files repro_665_set_union_proofs
+        PASS [   1.484s] ( 617/1315) egglog::files repro_665_set_union_term_encoding
+        PASS [   0.866s] ( 618/1315) egglog::files repro_738_fn_sort
+        PASS [   0.864s] ( 619/1315) egglog::files repro_738_fn_sort_32threads
+        PASS [   0.867s] ( 620/1315) egglog::files repro_738_fn_sort_desugar
+        PASS [   0.894s] ( 621/1315) egglog::files repro_define
+        PASS [   0.872s] ( 622/1315) egglog::files repro_define_32threads
+        PASS [   0.866s] ( 623/1315) egglog::files repro_define_desugar
+        PASS [   0.864s] ( 624/1315) egglog::files repro_define_desugar_proof_testing
+        PASS [   0.872s] ( 625/1315) egglog::files repro_define_proof_testing
+        PASS [   0.880s] ( 626/1315) egglog::files repro_define_proofs
+        PASS [   0.878s] ( 627/1315) egglog::files repro_define_term_encoding
+        PASS [   0.874s] ( 628/1315) egglog::files repro_desugar_143
+        PASS [   0.863s] ( 629/1315) egglog::files repro_desugar_143_32threads
+        PASS [   0.890s] ( 630/1315) egglog::files repro_desugar_143_desugar
+        PASS [   0.883s] ( 631/1315) egglog::files repro_empty_query
+        PASS [   0.866s] ( 632/1315) egglog::files repro_empty_query_32threads
+        PASS [   0.881s] ( 633/1315) egglog::files repro_empty_query_desugar
+        PASS [   0.866s] ( 634/1315) egglog::files repro_empty_query_desugar_proof_testing
+        PASS [   0.881s] ( 635/1315) egglog::files repro_empty_query_proof_testing
+        PASS [   0.884s] ( 636/1315) egglog::files repro_empty_query_proofs
+        PASS [   0.883s] ( 637/1315) egglog::files repro_empty_query_term_encoding
+        PASS [   0.877s] ( 638/1315) egglog::files repro_equal_constant
+        PASS [   0.874s] ( 639/1315) egglog::files repro_equal_constant2
+        PASS [   0.861s] ( 640/1315) egglog::files repro_equal_constant2_32threads
+        PASS [   0.872s] ( 641/1315) egglog::files repro_equal_constant2_desugar
+        PASS [   0.880s] ( 642/1315) egglog::files repro_equal_constant2_desugar_proof_testing
+        PASS [   0.863s] ( 643/1315) egglog::files repro_equal_constant2_proof_testing
+        PASS [   0.882s] ( 644/1315) egglog::files repro_equal_constant2_proofs
+        PASS [   0.873s] ( 645/1315) egglog::files repro_equal_constant2_term_encoding
+        PASS [   0.862s] ( 646/1315) egglog::files repro_equal_constant_32threads
+        PASS [   0.877s] ( 647/1315) egglog::files repro_equal_constant_desugar
+        PASS [   0.862s] ( 648/1315) egglog::files repro_equal_constant_desugar_proof_testing
+        PASS [   0.866s] ( 649/1315) egglog::files repro_equal_constant_proof_testing
+        PASS [   0.889s] ( 650/1315) egglog::files repro_equal_constant_proofs
+        PASS [   0.886s] ( 651/1315) egglog::files repro_equal_constant_term_encoding
+        PASS [   0.874s] ( 652/1315) egglog::files repro_filter_bug
+        PASS [   0.858s] ( 653/1315) egglog::files repro_filter_bug_32threads
+        PASS [   0.865s] ( 654/1315) egglog::files repro_filter_bug_desugar
+        PASS [   0.868s] ( 655/1315) egglog::files repro_filter_bug_desugar_proof_testing
+        PASS [   0.864s] ( 656/1315) egglog::files repro_filter_bug_proof_testing
+        PASS [   0.878s] ( 657/1315) egglog::files repro_filter_bug_proofs
+        PASS [   0.875s] ( 658/1315) egglog::files repro_filter_bug_term_encoding
+        PASS [   1.190s] ( 659/1315) egglog::files repro_herbie_vanilla
+        PASS [   1.044s] ( 660/1315) egglog::files repro_herbie_vanilla_32threads
+        PASS [   1.230s] ( 661/1315) egglog::files repro_herbie_vanilla_desugar
+        PASS [   0.875s] ( 662/1315) egglog::files repro_new_backend_delete
+        PASS [   0.863s] ( 663/1315) egglog::files repro_new_backend_delete_32threads
+        PASS [   0.891s] ( 664/1315) egglog::files repro_new_backend_delete_desugar
+        PASS [   0.872s] ( 665/1315) egglog::files repro_new_backend_delete_desugar_proof_testing
+        PASS [   0.869s] ( 666/1315) egglog::files repro_new_backend_delete_proof_testing
+        PASS [   0.866s] ( 667/1315) egglog::files repro_new_backend_delete_proofs
+        PASS [   0.888s] ( 668/1315) egglog::files repro_new_backend_delete_term_encoding
+        PASS [   0.883s] ( 669/1315) egglog::files repro_new_backend_prims
+        PASS [   0.858s] ( 670/1315) egglog::files repro_new_backend_prims_32threads
+        PASS [   0.864s] ( 671/1315) egglog::files repro_new_backend_prims_desugar
+        PASS [   0.863s] ( 672/1315) egglog::files repro_new_backend_prims_desugar_proof_testing
+        PASS [   0.853s] ( 673/1315) egglog::files repro_new_backend_prims_proof_testing
+        PASS [   0.871s] ( 674/1315) egglog::files repro_new_backend_prims_proofs
+        PASS [   0.873s] ( 675/1315) egglog::files repro_new_backend_prims_term_encoding
+        PASS [   0.897s] ( 676/1315) egglog::files repro_new_backend_python_vec
+        PASS [   0.927s] ( 677/1315) egglog::files repro_new_backend_python_vec_32threads
+        PASS [   0.921s] ( 678/1315) egglog::files repro_new_backend_python_vec_desugar
+        PASS [   0.874s] ( 679/1315) egglog::files repro_noteqbug
+        PASS [   0.855s] ( 680/1315) egglog::files repro_noteqbug_32threads
+        PASS [   0.864s] ( 681/1315) egglog::files repro_noteqbug_desugar
+        PASS [   0.877s] ( 682/1315) egglog::files repro_noteqbug_desugar_proof_testing
+        PASS [   0.907s] ( 683/1315) egglog::files repro_noteqbug_proof_testing
+        PASS [   0.874s] ( 684/1315) egglog::files repro_noteqbug_proofs
+        PASS [   0.875s] ( 685/1315) egglog::files repro_noteqbug_term_encoding
+        PASS [   0.872s] ( 686/1315) egglog::files repro_primitive_query
+        PASS [   0.869s] ( 687/1315) egglog::files repro_primitive_query_32threads
+        PASS [   0.871s] ( 688/1315) egglog::files repro_primitive_query_desugar
+        PASS [   0.862s] ( 689/1315) egglog::files repro_primitive_query_desugar_proof_testing
+        PASS [   0.854s] ( 690/1315) egglog::files repro_primitive_query_proof_testing
+        PASS [   0.878s] ( 691/1315) egglog::files repro_primitive_query_proofs
+        PASS [   0.868s] ( 692/1315) egglog::files repro_primitive_query_term_encoding
+        PASS [   0.870s] ( 693/1315) egglog::files repro_querybug
+        PASS [   0.878s] ( 694/1315) egglog::files repro_querybug2
+        PASS [   0.857s] ( 695/1315) egglog::files repro_querybug2_32threads
+        PASS [   0.886s] ( 696/1315) egglog::files repro_querybug2_desugar
+        PASS [   0.869s] ( 697/1315) egglog::files repro_querybug2_desugar_proof_testing
+        PASS [   0.859s] ( 698/1315) egglog::files repro_querybug2_proof_testing
+        PASS [   0.879s] ( 699/1315) egglog::files repro_querybug2_proofs
+        PASS [   0.891s] ( 700/1315) egglog::files repro_querybug2_term_encoding
+        PASS [   0.886s] ( 701/1315) egglog::files repro_querybug3
+        PASS [   0.872s] ( 702/1315) egglog::files repro_querybug3_32threads
+        PASS [   0.873s] ( 703/1315) egglog::files repro_querybug3_desugar
+        PASS [   0.879s] ( 704/1315) egglog::files repro_querybug3_desugar_proof_testing
+        PASS [   0.879s] ( 705/1315) egglog::files repro_querybug3_proof_testing
+        PASS [   0.876s] ( 706/1315) egglog::files repro_querybug3_proofs
+        PASS [   0.880s] ( 707/1315) egglog::files repro_querybug3_term_encoding
+        PASS [   0.879s] ( 708/1315) egglog::files repro_querybug4
+        PASS [   0.874s] ( 709/1315) egglog::files repro_querybug4_32threads
+        PASS [   0.868s] ( 710/1315) egglog::files repro_querybug4_desugar
+        PASS [   0.861s] ( 711/1315) egglog::files repro_querybug4_desugar_proof_testing
+        PASS [   0.866s] ( 712/1315) egglog::files repro_querybug4_proof_testing
+        PASS [   0.877s] ( 713/1315) egglog::files repro_querybug4_proofs
+        PASS [   0.890s] ( 714/1315) egglog::files repro_querybug4_term_encoding
+        PASS [   0.862s] ( 715/1315) egglog::files repro_querybug_32threads
+        PASS [   0.883s] ( 716/1315) egglog::files repro_querybug_desugar
+        PASS [   0.877s] ( 717/1315) egglog::files repro_querybug_desugar_proof_testing
+        PASS [   0.882s] ( 718/1315) egglog::files repro_querybug_proof_testing
+        PASS [   0.887s] ( 719/1315) egglog::files repro_querybug_proofs
+        PASS [   0.865s] ( 720/1315) egglog::files repro_querybug_term_encoding
+        PASS [   0.867s] ( 721/1315) egglog::files repro_should_saturate
+        PASS [   0.862s] ( 722/1315) egglog::files repro_should_saturate_32threads
+        PASS [   0.879s] ( 723/1315) egglog::files repro_should_saturate_desugar
+        PASS [   0.863s] ( 724/1315) egglog::files repro_should_saturate_desugar_proof_testing
+        PASS [   0.871s] ( 725/1315) egglog::files repro_should_saturate_proof_testing
+        PASS [   0.874s] ( 726/1315) egglog::files repro_should_saturate_proofs
+        PASS [   0.874s] ( 727/1315) egglog::files repro_should_saturate_term_encoding
+        PASS [   0.878s] ( 728/1315) egglog::files repro_silly_panic
+        PASS [   0.849s] ( 729/1315) egglog::files repro_silly_panic_32threads
+        PASS [   0.875s] ( 730/1315) egglog::files repro_silly_panic_desugar
+        PASS [   0.872s] ( 731/1315) egglog::files repro_silly_panic_desugar_proof_testing
+        PASS [   0.872s] ( 732/1315) egglog::files repro_silly_panic_proof_testing
+        PASS [   0.882s] ( 733/1315) egglog::files repro_silly_panic_proofs
+        PASS [   0.869s] ( 734/1315) egglog::files repro_silly_panic_term_encoding
+        PASS [   0.874s] ( 735/1315) egglog::files repro_small_rebuild_fail_term_encoding
+        PASS [   0.868s] ( 736/1315) egglog::files repro_small_rebuild_fail_term_encoding_32threads
+        PASS [   0.886s] ( 737/1315) egglog::files repro_small_rebuild_fail_term_encoding_desugar
+        PASS [   0.868s] ( 738/1315) egglog::files repro_small_rebuild_fail_term_encoding_desugar_proof_testing
+        PASS [   0.871s] ( 739/1315) egglog::files repro_small_rebuild_fail_term_encoding_proof_testing
+        PASS [   0.898s] ( 740/1315) egglog::files repro_small_rebuild_fail_term_encoding_proofs
+        PASS [   0.882s] ( 741/1315) egglog::files repro_small_rebuild_fail_term_encoding_term_encoding
+        PASS [   0.885s] ( 742/1315) egglog::files repro_stale_rows
+        PASS [   0.861s] ( 743/1315) egglog::files repro_stale_rows_32threads
+        PASS [   0.878s] ( 744/1315) egglog::files repro_stale_rows_desugar
+        PASS [   0.879s] ( 745/1315) egglog::files repro_stale_rows_desugar_proof_testing
+        PASS [   0.895s] ( 746/1315) egglog::files repro_stale_rows_proof_testing
+        PASS [   0.885s] ( 747/1315) egglog::files repro_stale_rows_proofs
+        PASS [   0.889s] ( 748/1315) egglog::files repro_stale_rows_term_encoding
+        PASS [   0.887s] ( 749/1315) egglog::files repro_typecheck_term_encoding
+        PASS [   0.874s] ( 750/1315) egglog::files repro_typecheck_term_encoding_32threads
+        PASS [   0.885s] ( 751/1315) egglog::files repro_typecheck_term_encoding_desugar
+        PASS [   0.890s] ( 752/1315) egglog::files repro_typecheck_term_encoding_desugar_proof_testing
+        PASS [   0.885s] ( 753/1315) egglog::files repro_typecheck_term_encoding_proof_testing
+        PASS [   0.894s] ( 754/1315) egglog::files repro_typecheck_term_encoding_proofs
+        PASS [   0.902s] ( 755/1315) egglog::files repro_typecheck_term_encoding_term_encoding
+        PASS [   0.878s] ( 756/1315) egglog::files repro_typechecking_schedule
+        PASS [   0.877s] ( 757/1315) egglog::files repro_typechecking_schedule_32threads
+        PASS [   0.884s] ( 758/1315) egglog::files repro_typechecking_schedule_desugar
+        PASS [   0.873s] ( 759/1315) egglog::files repro_typechecking_schedule_desugar_proof_testing
+        PASS [   0.871s] ( 760/1315) egglog::files repro_typechecking_schedule_proof_testing
+        PASS [   0.875s] ( 761/1315) egglog::files repro_typechecking_schedule_proofs
+        PASS [   0.872s] ( 762/1315) egglog::files repro_typechecking_schedule_term_encoding
+        PASS [   0.913s] ( 763/1315) egglog::files repro_unsound
+        PASS [   0.924s] ( 764/1315) egglog::files repro_unsound_32threads
+        PASS [   0.915s] ( 765/1315) egglog::files repro_unsound_desugar
+        PASS [   0.885s] ( 766/1315) egglog::files repro_unsound_htutorial
+        PASS [   0.871s] ( 767/1315) egglog::files repro_unsound_htutorial_32threads
+        PASS [   0.894s] ( 768/1315) egglog::files repro_unsound_htutorial_desugar
+        PASS [   0.883s] ( 769/1315) egglog::files repro_unsound_htutorial_desugar_proof_testing
+        PASS [   0.866s] ( 770/1315) egglog::files repro_unsound_htutorial_proof_testing
+        PASS [   0.875s] ( 771/1315) egglog::files repro_unsound_htutorial_proofs
+        PASS [   0.863s] ( 772/1315) egglog::files repro_unsound_htutorial_term_encoding
+        PASS [   0.882s] ( 773/1315) egglog::files repro_vec_unequal
+        PASS [   0.878s] ( 774/1315) egglog::files repro_vec_unequal_32threads
+        PASS [   0.879s] ( 775/1315) egglog::files repro_vec_unequal_desugar
+        PASS [   0.882s] ( 776/1315) egglog::files resolution
+        PASS [   0.881s] ( 777/1315) egglog::files resolution_32threads
+        PASS [   0.881s] ( 778/1315) egglog::files resolution_desugar
+        PASS [   0.894s] ( 779/1315) egglog::files resolution_desugar_proof_testing
+        PASS [   0.884s] ( 780/1315) egglog::files resolution_proof_testing
+        PASS [   0.894s] ( 781/1315) egglog::files resolution_proofs
+        PASS [   0.894s] ( 782/1315) egglog::files resolution_term_encoding
+        PASS [   0.874s] ( 783/1315) egglog::files rule_head_fast_path_desugar_proof_testing
+        PASS [   0.869s] ( 784/1315) egglog::files rule_head_fast_path_proof_testing
+        PASS [   0.890s] ( 785/1315) egglog::files rule_head_fast_path_proofs
+        PASS [   0.892s] ( 786/1315) egglog::files rw_analysis
+        PASS [   0.882s] ( 787/1315) egglog::files rw_analysis_32threads
+        PASS [   0.879s] ( 788/1315) egglog::files rw_analysis_desugar
+        PASS [   0.960s] ( 789/1315) egglog::files rw_analysis_desugar_proof_testing
+        PASS [   0.912s] ( 790/1315) egglog::files rw_analysis_proof_testing
+        PASS [   0.941s] ( 791/1315) egglog::files rw_analysis_proofs
+        PASS [   0.911s] ( 792/1315) egglog::files rw_analysis_term_encoding
+        PASS [   0.873s] ( 793/1315) egglog::files schedule_demo
+        PASS [   0.875s] ( 794/1315) egglog::files schedule_demo_32threads
+        PASS [   0.886s] ( 795/1315) egglog::files schedule_demo_desugar
+        PASS [   0.886s] ( 796/1315) egglog::files schedule_demo_desugar_proof_testing
+        PASS [   0.878s] ( 797/1315) egglog::files schedule_demo_proof_testing
+        PASS [   0.889s] ( 798/1315) egglog::files schedule_demo_proofs
+        PASS [   0.873s] ( 799/1315) egglog::files schedule_demo_term_encoding
+        PASS [   0.881s] ( 800/1315) egglog::files set
+        PASS [   0.860s] ( 801/1315) egglog::files set_32threads
+        PASS [   0.875s] ( 802/1315) egglog::files set_desugar
+        PASS [   0.881s] ( 803/1315) egglog::files set_sort_function
+        PASS [   0.863s] ( 804/1315) egglog::files set_sort_function_32threads
+        PASS [   0.881s] ( 805/1315) egglog::files set_sort_function_desugar
+        PASS [   0.877s] ( 806/1315) egglog::files shadow_local_before_global
+        PASS [   0.860s] ( 807/1315) egglog::files shadow_local_before_global_32threads
+        PASS [   0.890s] ( 808/1315) egglog::files shadow_local_before_global_desugar
+        PASS [   0.876s] ( 809/1315) egglog::files shadow_local_before_global_desugar_proof_testing
+        PASS [   0.874s] ( 810/1315) egglog::files shadow_local_before_global_proof_testing
+        PASS [   0.883s] ( 811/1315) egglog::files shadow_local_before_global_proofs
+        PASS [   0.881s] ( 812/1315) egglog::files shadow_local_before_global_term_encoding
+        PASS [   0.863s] ( 813/1315) egglog::files simple_proof_check_desugar_proof_testing
+        PASS [   0.862s] ( 814/1315) egglog::files simple_proof_check_proof_testing
+        PASS [   0.885s] ( 815/1315) egglog::files simple_proof_check_proofs
+        PASS [   0.901s] ( 816/1315) egglog::files stratified
+        PASS [   0.874s] ( 817/1315) egglog::files stratified_32threads
+        PASS [   0.874s] ( 818/1315) egglog::files stratified_desugar
+        PASS [   0.864s] ( 819/1315) egglog::files stratified_desugar_proof_testing
+        PASS [   0.875s] ( 820/1315) egglog::files stratified_proof_testing
+        PASS [   0.901s] ( 821/1315) egglog::files stratified_proofs
+        PASS [   0.877s] ( 822/1315) egglog::files stratified_term_encoding
+        PASS [   4.095s] ( 823/1315) egglog::files stresstest_large_expr
+        PASS [   4.205s] ( 824/1315) egglog::files stresstest_large_expr_32threads
+        PASS [   4.729s] ( 825/1315) egglog::files stresstest_large_expr_desugar
+        PASS [   0.879s] ( 826/1315) egglog::files string
+        PASS [   0.877s] ( 827/1315) egglog::files string_32threads
+        PASS [   0.868s] ( 828/1315) egglog::files string_desugar
+        PASS [   0.871s] ( 829/1315) egglog::files string_desugar_proof_testing
+        PASS [   0.871s] ( 830/1315) egglog::files string_proof_testing
+        PASS [   0.887s] ( 831/1315) egglog::files string_proofs
+        PASS [   0.875s] ( 832/1315) egglog::files string_quotes
+        PASS [   0.857s] ( 833/1315) egglog::files string_quotes_32threads
+        PASS [   0.871s] ( 834/1315) egglog::files string_quotes_desugar
+        PASS [   0.870s] ( 835/1315) egglog::files string_term_encoding
+        PASS [   0.884s] ( 836/1315) egglog::files subsume
+        PASS [   0.861s] ( 837/1315) egglog::files subsume_32threads
+        PASS [   0.867s] ( 838/1315) egglog::files subsume_desugar
+        PASS [   0.872s] ( 839/1315) egglog::files subsume_relation
+        PASS [   0.866s] ( 840/1315) egglog::files subsume_relation_32threads
+        PASS [   0.885s] ( 841/1315) egglog::files subsume_relation_desugar
+        PASS [   1.421s] ( 842/1315) egglog::files taylor51
+        PASS [   1.501s] ( 843/1315) egglog::files taylor51_32threads
+        PASS [   1.481s] ( 844/1315) egglog::files taylor51_desugar
+        PASS [   0.872s] ( 845/1315) egglog::files term_encoding_subsume_rebuild_bug
+        PASS [   0.873s] ( 846/1315) egglog::files term_encoding_subsume_rebuild_bug_32threads
+        PASS [   0.875s] ( 847/1315) egglog::files term_encoding_subsume_rebuild_bug_desugar
+        PASS [   0.886s] ( 848/1315) egglog::files term_encoding_subsume_rebuild_bug_desugar_proof_testing
+        PASS [   0.864s] ( 849/1315) egglog::files term_encoding_subsume_rebuild_bug_proof_testing
+        PASS [   0.878s] ( 850/1315) egglog::files term_encoding_subsume_rebuild_bug_proofs
+        PASS [   0.882s] ( 851/1315) egglog::files term_encoding_subsume_rebuild_bug_term_encoding
+        PASS [   0.870s] ( 852/1315) egglog::files test_combined
+        PASS [   0.874s] ( 853/1315) egglog::files test_combined_32threads
+        PASS [   0.880s] ( 854/1315) egglog::files test_combined_desugar
+        PASS [   0.879s] ( 855/1315) egglog::files test_combined_desugar_proof_testing
+        PASS [   0.871s] ( 856/1315) egglog::files test_combined_proof_testing
+        PASS [   0.877s] ( 857/1315) egglog::files test_combined_proofs
+        PASS [   0.886s] ( 858/1315) egglog::files test_combined_steps
+        PASS [   0.851s] ( 859/1315) egglog::files test_combined_steps_32threads
+        PASS [   0.880s] ( 860/1315) egglog::files test_combined_steps_desugar
+        PASS [   0.893s] ( 861/1315) egglog::files test_combined_steps_desugar_proof_testing
+        PASS [   0.894s] ( 862/1315) egglog::files test_combined_steps_proof_testing
+        PASS [   0.886s] ( 863/1315) egglog::files test_combined_steps_proofs
+        PASS [   0.874s] ( 864/1315) egglog::files test_combined_steps_term_encoding
+        PASS [   0.878s] ( 865/1315) egglog::files test_combined_term_encoding
+        PASS [   0.864s] ( 866/1315) egglog::files towers_of_hanoi
+        PASS [   0.866s] ( 867/1315) egglog::files towers_of_hanoi_32threads
+        PASS [   0.860s] ( 868/1315) egglog::files towers_of_hanoi_desugar
+        PASS [   0.887s] ( 869/1315) egglog::files tricky_type_checking
+        PASS [   0.875s] ( 870/1315) egglog::files tricky_type_checking_32threads
+        PASS [   0.875s] ( 871/1315) egglog::files tricky_type_checking_desugar
+        PASS [   0.883s] ( 872/1315) egglog::files type_constraints_tests
+        PASS [   0.864s] ( 873/1315) egglog::files type_constraints_tests_32threads
+        PASS [   0.874s] ( 874/1315) egglog::files type_constraints_tests_desugar
+        PASS [   0.873s] ( 875/1315) egglog::files type_constraints_tests_desugar_proof_testing
+        PASS [   0.867s] ( 876/1315) egglog::files type_constraints_tests_proof_testing
+        PASS [   0.870s] ( 877/1315) egglog::files type_constraints_tests_proofs
+        PASS [   0.880s] ( 878/1315) egglog::files type_constraints_tests_term_encoding
+        PASS [   0.872s] ( 879/1315) egglog::files typecheck
+        PASS [   0.874s] ( 880/1315) egglog::files typecheck_32threads
+        PASS [   0.887s] ( 881/1315) egglog::files typecheck_desugar
+        PASS [   0.920s] ( 882/1315) egglog::files typecheck_desugar_proof_testing
+        PASS [   0.899s] ( 883/1315) egglog::files typecheck_proof_testing
+        PASS [   0.909s] ( 884/1315) egglog::files typecheck_proofs
+        PASS [   0.901s] ( 885/1315) egglog::files typecheck_term_encoding
+        PASS [   0.869s] ( 886/1315) egglog::files typed_primitive_unstable_app
+        PASS [   0.867s] ( 887/1315) egglog::files typed_primitive_unstable_app_32threads
+        PASS [   0.874s] ( 888/1315) egglog::files typed_primitive_unstable_app_desugar
+        PASS [   0.905s] ( 889/1315) egglog::files typeinfer
+        PASS [   0.926s] ( 890/1315) egglog::files typeinfer_32threads
+        PASS [   0.903s] ( 891/1315) egglog::files typeinfer_desugar
+        PASS [   0.865s] ( 892/1315) egglog::files uf_extraction
+        PASS [   0.863s] ( 893/1315) egglog::files uf_extraction_32threads
+        PASS [   0.887s] ( 894/1315) egglog::files uf_extraction_desugar
+        PASS [   0.880s] ( 895/1315) egglog::files unification_points_to
+        PASS [   0.872s] ( 896/1315) egglog::files unification_points_to_32threads
+        PASS [   0.886s] ( 897/1315) egglog::files unification_points_to_desugar
+        PASS [   0.971s] ( 898/1315) egglog::files unification_points_to_desugar_proof_testing
+        PASS [   0.951s] ( 899/1315) egglog::files unification_points_to_proof_testing
+        PASS [   0.918s] ( 900/1315) egglog::files unification_points_to_proofs
+        PASS [   0.912s] ( 901/1315) egglog::files unification_points_to_term_encoding
+        PASS [   0.879s] ( 902/1315) egglog::files unify
+        PASS [   0.859s] ( 903/1315) egglog::files unify_32threads
+        PASS [   0.878s] ( 904/1315) egglog::files unify_desugar
+        PASS [   0.871s] ( 905/1315) egglog::files unify_desugar_proof_testing
+        PASS [   0.871s] ( 906/1315) egglog::files unify_proof_testing
+        PASS [   0.875s] ( 907/1315) egglog::files unify_proofs
+        PASS [   0.884s] ( 908/1315) egglog::files unify_term_encoding
+        PASS [   0.871s] ( 909/1315) egglog::files unsafe_seminaive
+        PASS [   0.868s] ( 910/1315) egglog::files unsafe_seminaive_32threads
+        PASS [   0.876s] ( 911/1315) egglog::files unsafe_seminaive_desugar
+        PASS [   0.871s] ( 912/1315) egglog::files unsafe_seminaive_read_prim
+        PASS [   0.859s] ( 913/1315) egglog::files unsafe_seminaive_read_prim_32threads
+        PASS [   0.869s] ( 914/1315) egglog::files unsafe_seminaive_read_prim_desugar
+        PASS [   0.899s] ( 915/1315) egglog::files unstable_fn
+        PASS [   0.864s] ( 916/1315) egglog::files unstable_fn_32threads
+        PASS [   0.881s] ( 917/1315) egglog::files unstable_fn_desugar
+        PASS [   0.893s] ( 918/1315) egglog::files until
+        PASS [   0.876s] ( 919/1315) egglog::files until_32threads
+        PASS [   0.888s] ( 920/1315) egglog::files until_desugar
+        PASS [   0.908s] ( 921/1315) egglog::files until_desugar_proof_testing
+        PASS [   0.884s] ( 922/1315) egglog::files until_proof_testing
+        PASS [   0.884s] ( 923/1315) egglog::files until_proofs
+        PASS [   0.895s] ( 924/1315) egglog::files until_term_encoding
+        PASS [   0.874s] ( 925/1315) egglog::files use_at_in_string
+        PASS [   0.863s] ( 926/1315) egglog::files use_at_in_string_32threads
+        PASS [   0.888s] ( 927/1315) egglog::files use_at_in_string_desugar
+        PASS [   0.878s] ( 928/1315) egglog::files use_at_in_string_desugar_proof_testing
+        PASS [   0.875s] ( 929/1315) egglog::files use_at_in_string_proof_testing
+        PASS [   0.868s] ( 930/1315) egglog::files use_at_in_string_proofs
+        PASS [   0.870s] ( 931/1315) egglog::files use_at_in_string_term_encoding
+        PASS [   0.859s] ( 932/1315) egglog::files vec
+        PASS [   0.877s] ( 933/1315) egglog::files vec_32threads
+        PASS [   0.875s] ( 934/1315) egglog::files vec_desugar
+        PASS [   3.242s] ( 935/1315) egglog::files whisper
+        PASS [   1.931s] ( 936/1315) egglog::files whisper_32threads
+        PASS [   3.315s] ( 937/1315) egglog::files whisper_desugar
+        PASS [   0.025s] ( 938/1315) egglog::globals_warning_tests globals_missing_prefix_warns_by_default
+        PASS [   0.008s] ( 939/1315) egglog::globals_warning_tests globals_missing_prefix_warns_for_prefixed_pattern_variable_by_default
+        PASS [   0.007s] ( 940/1315) egglog::globals_warning_tests globals_missing_prefix_warns_for_prefixed_rule_let_by_default
+        PASS [   0.029s] ( 941/1315) egglog::integration_test additive_cost_model_uses_configured_default_node_cost
+        PASS [   0.272s] ( 942/1315) egglog::integration_test check_facts_stops_safely_in_parallel_mode
+        PASS [   0.008s] ( 943/1315) egglog::integration_test clear_function_lifecycle
+        PASS [   0.007s] ( 944/1315) egglog::integration_test clear_function_unknown_function_errors
+        PASS [   0.009s] ( 945/1315) egglog::integration_test clear_function_with_rules_siblings_and_merge
+        PASS [   0.008s] ( 946/1315) egglog::integration_test constructor_term_constructor_is_rejected
+        PASS [   0.019s] ( 947/1315) egglog::integration_test eqsat_basic_term_encoding_roundtrip
+        PASS [   0.008s] ( 948/1315) egglog::integration_test extract_best_returns_none_for_unextractable_roots
+        PASS [   0.007s] ( 949/1315) egglog::integration_test fail_run_continues_from_canonical_partial_state
+        PASS [   0.008s] ( 950/1315) egglog::integration_test globals_cannot_be_shadowed_by_pattern_variables
+        PASS [   0.007s] ( 951/1315) egglog::integration_test globals_missing_prefix_errors_for_prefixed_pattern_variable_when_opted_in
+        PASS [   0.007s] ( 952/1315) egglog::integration_test globals_missing_prefix_errors_for_prefixed_rule_let_when_opted_in
+        PASS [   0.007s] ( 953/1315) egglog::integration_test globals_missing_prefix_errors_when_opted_in
+        PASS [   0.007s] ( 954/1315) egglog::integration_test monoid_unsigned_cost_saturates
+        PASS [   0.007s] ( 955/1315) egglog::integration_test primitive_error_in_extract_returns_error
+        PASS [   0.007s] ( 956/1315) egglog::integration_test primitive_error_in_run_schedule_returns_error
+        PASS [   0.010s] ( 957/1315) egglog::integration_test prove_exists_reports_query_mismatch
+        PASS [   0.008s] ( 958/1315) egglog::integration_test rewrite_name_basic
+        PASS [   0.008s] ( 959/1315) egglog::integration_test rewrite_name_birewrite
+        PASS [   0.007s] ( 960/1315) egglog::integration_test rewrite_name_desugars_correctly
+        PASS [   0.008s] ( 961/1315) egglog::integration_test rewrite_name_with_ruleset
+        PASS [   0.008s] ( 962/1315) egglog::integration_test rewrite_without_name_still_works
+        PASS [   0.007s] ( 963/1315) egglog::integration_test test_cant_subsume_merge
+        PASS [   0.008s] ( 964/1315) egglog::integration_test test_extract_variants1
+        PASS [   0.008s] ( 965/1315) egglog::integration_test test_print_function
+        PASS [   0.007s] ( 966/1315) egglog::integration_test test_print_function_csv
+        PASS [   0.007s] ( 967/1315) egglog::integration_test test_print_function_size
+        PASS [   0.007s] ( 968/1315) egglog::integration_test test_print_stats
+        PASS [   0.008s] ( 969/1315) egglog::integration_test test_rewrite_subsumed
+        PASS [   0.008s] ( 970/1315) egglog::integration_test test_rewrite_subsumed_unextractable
+        PASS [   0.008s] ( 971/1315) egglog::integration_test test_rule_subsume_predicted_rows
+        PASS [   0.007s] ( 972/1315) egglog::integration_test test_run_report
+        PASS [   0.007s] ( 973/1315) egglog::integration_test test_serialize_617
+        PASS [   0.008s] ( 974/1315) egglog::integration_test test_serialize_message_max_calls_per_function
+        PASS [   0.007s] ( 975/1315) egglog::integration_test test_serialize_message_max_functions
+        PASS [   0.007s] ( 976/1315) egglog::integration_test test_serialize_sort_name_with_dash
+        PASS [   0.008s] ( 977/1315) egglog::integration_test test_serialize_subsume_status
+        PASS [   0.008s] ( 978/1315) egglog::integration_test test_shadowing_push
+        PASS [   0.008s] ( 979/1315) egglog::integration_test test_shadowing_query
+        PASS [   0.007s] ( 980/1315) egglog::integration_test test_simple_extract1
+        PASS [   0.007s] ( 981/1315) egglog::integration_test test_simple_extract2
+        PASS [   0.007s] ( 982/1315) egglog::integration_test test_simple_extract3
+        PASS [   0.008s] ( 983/1315) egglog::integration_test test_simple_extract4
+        PASS [   0.008s] ( 984/1315) egglog::integration_test test_simple_extract5
+        PASS [   0.007s] ( 985/1315) egglog::integration_test test_simple_extract6
+        PASS [   0.008s] ( 986/1315) egglog::integration_test test_simple_extract7
+        PASS [   0.008s] ( 987/1315) egglog::integration_test test_simple_extract8
+        PASS [   0.008s] ( 988/1315) egglog::integration_test test_simple_extract9
+        PASS [   0.008s] ( 989/1315) egglog::integration_test test_subsume
+        PASS [   0.006s] ( 990/1315) egglog::integration_test test_subsume_custom
+        PASS [   0.007s] ( 991/1315) egglog::integration_test test_subsume_ok
+        PASS [   0.008s] ( 992/1315) egglog::integration_test test_subsume_unextractable_action_extract_multiple
+        PASS [   0.007s] ( 993/1315) egglog::integration_test test_subsume_unextractable_insert_and_merge
+        PASS [   0.007s] ( 994/1315) egglog::integration_test test_subsumed_unextractable_action_extract
+        PASS [   0.007s] ( 995/1315) egglog::integration_test test_value_to_classid
+        PASS [   0.008s] ( 996/1315) egglog::integration_test tree_cost_model_accepts_custom_enode_annotation
+        PASS [   0.008s] ( 997/1315) egglog::integration_test tree_cost_model_does_not_require_monoid_cost
+        PASS [   0.007s] ( 998/1315) egglog::integration_test tree_extractor_preserves_tied_parent_after_delayed_child_improvement
+        PASS [   0.008s] ( 999/1315) egglog::integration_test tree_extractor_reschedules_nested_map_keys_with_captured_functions
+        PASS [   0.008s] (1000/1315) egglog::integration_test tree_extractor_reuses_costs_for_multiple_values
+        PASS [   0.007s] (1001/1315) egglog::integration_test tree_extractor_signed_cost_matches_reconstructed_tree
+        PASS [   0.007s] (1002/1315) egglog::integration_test tree_extractor_supports_reachable_sorts_and_zero_variants
+        PASS [   0.027s] (1003/1315) egglog::naive_unstable_fn_via_global global_naive_widens_rule_context_same_as_local_naive
+        PASS [   0.008s] (1004/1315) egglog::naive_unstable_fn_via_global naive_rule_with_unstable_fn_via_global_works
+        PASS [   0.007s] (1005/1315) egglog::naive_unstable_fn_via_global rule_action_using_unstable_fn_custom_function_requires_naive
+        PASS [   0.007s] (1006/1315) egglog::naive_unstable_fn_via_global rule_body_without_naive_using_unstable_fn_via_global_hard_errors
+        PASS [   0.027s] (1007/1315) egglog::no_panic command_execution_errors
+        PASS [   0.008s] (1008/1315) egglog::no_panic desugar_and_parse_errors
+        PASS [   0.008s] (1009/1315) egglog::no_panic malformed_sort_declarations_error
+        PASS [   0.007s] (1010/1315) egglog::no_panic multiset_index_with_primitive_function_does_not_panic
+        PASS [   0.008s] (1011/1315) egglog::no_panic partial_primitives_error_instead_of_panicking
+        PASS [   0.007s] (1012/1315) egglog::no_panic prove_exists_without_proofs_errors
+        PASS [   0.008s] (1013/1315) egglog::no_panic term_encoding_with_escaped_string_does_not_panic
+        PASS [   0.007s] (1014/1315) egglog::no_panic unstable_fn_resolution_errors
+        PASS [   0.027s] (1015/1315) egglog::proof_mode_regression proof_mode_command_macros_see_original_function_arities
+        PASS [   0.075s] (1016/1315) egglog::proof_selector_merge selector_merge_cleanup_uses_existing_current_proof
+        PASS [   0.012s] (1017/1315) egglog::terms test_termdag_malicious_client
+        PASS [   0.007s] (1018/1315) egglog::terms test_termdag_public
+        PASS [   0.024s] (1019/1315) egglog::test_command_macros test_complex_macro_composition
+        PASS [   0.008s] (1020/1315) egglog::test_command_macros test_duplicate_macro_creates_two_rules
+        PASS [   0.011s] (1021/1315) egglog::test_command_macros test_macro_accesses_type_info
+        PASS [   0.007s] (1022/1315) egglog::test_command_macros test_macro_adds_commands_after_rules
+        PASS [   0.008s] (1023/1315) egglog::test_command_macros test_macros_work_with_actual_program_execution
+        PASS [   0.007s] (1024/1315) egglog::test_command_macros test_multiple_macros_compose_with_desugar_program
+        PASS [   0.007s] (1025/1315) egglog::test_command_macros test_single_macro_with_desugar_program
+        PASS [   0.024s] (1026/1315) egglog::test_desugar rule_names_are_stable
+        PASS [   0.022s] (1027/1315) egglog::test_desugar test_desugar_includes
+        PASS [   0.025s] (1028/1315) egglog::typed_primitive duplicate_primitive_in_rule_action_errors
+        PASS [   0.008s] (1029/1315) egglog::typed_primitive duplicate_primitive_in_rule_query_errors
+        PASS [   0.009s] (1030/1315) egglog::typed_primitive duplicate_primitive_in_scheduled_rule_errors_and_restores
+        PASS [   0.008s] (1031/1315) egglog::typed_primitive full_primitive_accepted_only_in_global_action
+        PASS [   0.008s] (1032/1315) egglog::typed_primitive merge_primitives_use_write_context
+        PASS [   0.008s] (1033/1315) egglog::typed_primitive missing_sort_panics_with_type_name
+        PASS [   0.007s] (1034/1315) egglog::typed_primitive pure_primitive_accepted_everywhere
+        PASS [   0.007s] (1035/1315) egglog::typed_primitive read_primitive_can_observe_table_sizes
+        PASS [   0.008s] (1036/1315) egglog::typed_primitive read_primitive_rejected_in_rule_contexts
+        PASS [   0.007s] (1037/1315) egglog::typed_primitive two_same_signature_registrations_error_on_use
+        PASS [   0.009s] (1038/1315) egglog::typed_primitive unstable_app_dispatch_matrix
+        PASS [   0.007s] (1039/1315) egglog::typed_primitive unstable_fn_duplicate_primitive_registration_errors_on_build
+        PASS [   0.007s] (1040/1315) egglog::typed_primitive write_primitive_rejected_in_queries
+        PASS [   0.011s] (1041/1315) egglog::user_defined_command_output borrowed_values_still_implement_user_defined_command_output
+        PASS [   0.007s] (1042/1315) egglog::user_defined_command_output user_defined_command_output_can_be_downcast
+        PASS [   0.025s] (1043/1315) egglog::validator_test test_add_primitive_validator
+        PASS [   0.008s] (1044/1315) egglog::validator_test test_add_pure_primitive_with_validator
+        PASS [   0.010s] (1045/1315) egglog-ast generic_ast_helpers::tests::display_nullary_call_without_trailing_space
+        PASS [   0.007s] (1046/1315) egglog-ast generic_ast_helpers::tests::display_nullary_change_without_trailing_space
+        PASS [   0.006s] (1047/1315) egglog-ast generic_ast_helpers::tests::display_panic_message_escapes_special_characters
+        PASS [   0.006s] (1048/1315) egglog-ast generic_ast_helpers::tests::display_rule_name_escapes_special_characters
+        PASS [   0.006s] (1049/1315) egglog-ast generic_ast_helpers::tests::display_string_literal_escapes_special_characters
+        PASS [   0.006s] (1050/1315) egglog-ast span::tests::egglog_span_display_preserves_full_path
+        PASS [   0.018s] (1051/1315) egglog-bridge tests::ac
+        PASS [   0.007s] (1052/1315) egglog-bridge tests::ac_fail
+        PASS [   0.007s] (1053/1315) egglog-bridge tests::ac_subsume
+        PASS [   0.006s] (1054/1315) egglog-bridge tests::action_panic_rebuilds_before_returning
+        PASS [   0.008s] (1055/1315) egglog-bridge tests::basic_container
+        PASS [   0.006s] (1056/1315) egglog-bridge tests::basic_subsumption
+        PASS [   0.007s] (1057/1315) egglog-bridge tests::constrain_prims_abstract
+        PASS [   0.007s] (1058/1315) egglog-bridge tests::constrain_prims_simple
+        PASS [   0.006s] (1059/1315) egglog-bridge tests::lookup_failure_panics
+        PASS [   0.013s] (1060/1315) egglog-bridge tests::math
+        PASS [   0.015s] (1061/1315) egglog-bridge tests::math_subsume
+        PASS [   0.007s] (1062/1315) egglog-bridge tests::mergefn_arithmetic
+        PASS [   0.007s] (1063/1315) egglog-bridge tests::mergefn_nested_function
+        PASS [   0.006s] (1064/1315) egglog-bridge tests::panic_functions_trigger_early_stop
+        PASS [   0.007s] (1065/1315) egglog-bridge tests::primitive_failure_panics
+        PASS [   0.006s] (1066/1315) egglog-bridge tests::rhs_only_rule
+        PASS [   0.007s] (1067/1315) egglog-bridge tests::rhs_only_rule_only_runs_once
+        PASS [   0.007s] (1068/1315) egglog-bridge tests::seminaive_query_prim_rechecks_after_preseeded_container_rebuild
+        PASS [   0.006s] (1069/1315) egglog-bridge tests::seminaive_query_prim_rechecks_after_rebuild
+        PASS [   0.011s] (1070/1315) egglog-concurrency tests::basic_parallel_vec_push
+        PASS [   0.117s] (1071/1315) egglog-concurrency tests::basic_parallel_vec_write
+        PASS [   0.111s] (1072/1315) egglog-concurrency tests::basic_parallel_vec_write_slice
+        PASS [   0.009s] (1073/1315) egglog-concurrency tests::bitset_get_set_resize_and_clear
+        PASS [   0.007s] (1074/1315) egglog-concurrency tests::concurrent_vec_drops_initialized_values
+        PASS [   0.007s] (1075/1315) egglog-concurrency tests::concurrent_vec_resize_with_noop_when_sized
+        PASS [   0.007s] (1076/1315) egglog-concurrency tests::concurrent_vec_resize_with_parallel_init
+        PASS [   0.007s] (1077/1315) egglog-concurrency tests::concurrent_vec_resize_with_serial_init
+        PASS [   0.009s] (1078/1315) egglog-concurrency tests::notification_list_multi_threaded
+        PASS [   0.007s] (1079/1315) egglog-concurrency tests::notification_list_single_threaded
+        PASS [   0.007s] (1080/1315) egglog-concurrency tests::notification_race
+        PASS [   0.006s] (1081/1315) egglog-concurrency tests::notification_single_threaded
+        PASS [   0.008s] (1082/1315) egglog-concurrency tests::notification_timeout_observes_notification
+        PASS [   0.020s] (1083/1315) egglog-concurrency tests::notification_times_out
+        PASS [   0.117s] (1084/1315) egglog-concurrency tests::notification_wakes_up_multiple
+        PASS [   0.009s] (1085/1315) egglog-concurrency tests::parallel_vec_writer_panics_on_incorrect_exact_size_iterator
+        PASS [   0.006s] (1086/1315) egglog-concurrency tests::parallel_vec_writer_take_resets_writer
+        PASS [   0.006s] (1087/1315) egglog-concurrency tests::parallel_vec_writer_unsafe_read_access_reads_written_ranges
+        PASS [   0.006s] (1088/1315) egglog-concurrency tests::parallel_vec_writer_writes_cell_slices
+        PASS [   0.006s] (1089/1315) egglog-concurrency tests::read_optimized_lock_convenience_methods
+        PASS [   0.008s] (1090/1315) egglog-concurrency tests::read_optimized_lock_waits_for_ongoing_writer
+        PASS [   0.006s] (1091/1315) egglog-concurrency tests::resettable_once_lock_basic
+        PASS [   0.007s] (1092/1315) egglog-concurrency tests::resettable_once_lock_concurrent_get_or_update
+        PASS [   0.007s] (1093/1315) egglog-concurrency tests::resettable_once_lock_concurrent_readers
+        PASS [   0.007s] (1094/1315) egglog-concurrency tests::resettable_once_lock_multiple_resets
+        PASS [   0.006s] (1095/1315) egglog-concurrency tests::resettable_once_lock_reset
+        PASS [   0.006s] (1096/1315) egglog-concurrency tests::resettable_once_lock_send_sync
+        PASS [   0.007s] (1097/1315) egglog-concurrency tests::resettable_once_lock_update_mutability
+        PASS [   0.008s] (1098/1315) egglog-concurrency tests::shared_arena_alloc_preserves_values
+        PASS [   0.007s] (1099/1315) egglog-concurrency tests::shared_arena_allocates_from_scoped_threads
+        PASS [   0.007s] (1100/1315) egglog-concurrency tests::shared_arena_default_and_clone_ref
+        PASS [   0.007s] (1101/1315) egglog-concurrency tests::shared_arena_drops_every_registered_value
+        PASS [   0.007s] (1102/1315) egglog-concurrency tests::shared_arena_drops_values_lifo_within_a_handle
+        PASS [   0.006s] (1103/1315) egglog-concurrency tests::shared_arena_raw_initialization_panic_does_not_publish
+        PASS [   0.006s] (1104/1315) egglog-concurrency tests::shared_arena_raw_layout_honors_alignment
+        PASS [   0.007s] (1105/1315) egglog-concurrency tests::shared_arena_raw_layout_publishes_header_with_trailing_data
+        PASS [   0.006s] (1106/1315) egglog-concurrency tests::shared_arena_raw_publication_deliberately_forgets_drop_header
+        PASS [   0.006s] (1107/1315) egglog-concurrency tests::shared_arena_raw_publication_validates_header_layout
+        PASS [   0.006s] (1108/1315) egglog-concurrency tests::shared_arena_raw_publications_outlive_parallel_handles
+        PASS [   0.006s] (1109/1315) egglog-concurrency tests::shared_arena_refs_outlive_handles
+        PASS [   0.006s] (1110/1315) egglog-concurrency tests::shared_arena_send_sync_bounds
+        PASS [   0.158s] (1111/1315) egglog-concurrency tests::simple_mutex
+        PASS [   0.008s] (1112/1315) egglog-concurrency threadpool::tests::background_worker_helps_single_worker_nested_scope
+        PASS [   0.019s] (1113/1315) egglog-concurrency threadpool::tests::background_worker_wait_returns_after_nested_scope_finishes
+        PASS [   0.008s] (1114/1315) egglog-concurrency threadpool::tests::blocked_tasks_complete_together
+        PASS [   0.007s] (1115/1315) egglog-concurrency threadpool::tests::current_num_threads_is_one_without_installed_pool
+        PASS [   0.007s] (1116/1315) egglog-concurrency threadpool::tests::deeply_nested_background_waits_fall_back_to_backup_worker
+        PASS [   0.008s] (1117/1315) egglog-concurrency threadpool::tests::deeply_nested_local_work_is_donated_to_backup_worker
+        PASS [   0.007s] (1118/1315) egglog-concurrency threadpool::tests::donation_moves_half_of_the_oldest_local_jobs
+        PASS [   0.006s] (1119/1315) egglog-concurrency threadpool::tests::dropping_pool_closes_workers
+        PASS [   0.007s] (1120/1315) egglog-concurrency threadpool::tests::free_scope_panics_without_installed_pool
+        PASS [   0.007s] (1121/1315) egglog-concurrency threadpool::tests::free_scope_uses_installed_pool
+        PASS [   0.007s] (1122/1315) egglog-concurrency threadpool::tests::free_scope_works_from_spawned_callback
+        PASS [   0.007s] (1123/1315) egglog-concurrency threadpool::tests::install_sets_and_restores_current_pool
+        PASS [   0.017s] (1124/1315) egglog-concurrency threadpool::tests::many_scopes_cover_completion_races
+        PASS [   0.007s] (1125/1315) egglog-concurrency threadpool::tests::nested_background_worker_waits_can_reenter_help_loop
+        PASS [   0.006s] (1126/1315) egglog-concurrency threadpool::tests::nested_scope_help_takes_local_work_before_global_work
+        PASS [   0.006s] (1127/1315) egglog-concurrency threadpool::tests::nested_spawn_can_borrow_scope_data
+        PASS [   0.007s] (1128/1315) egglog-concurrency threadpool::tests::nested_spawn_runs_to_completion
+        PASS [   0.018s] (1129/1315) egglog-concurrency threadpool::tests::nested_work_spawned_after_root_callback_returns_is_waited_for
+        PASS [   0.008s] (1130/1315) egglog-concurrency threadpool::tests::outer_panic_still_waits_for_spawned_work
+        PASS [   0.007s] (1131/1315) egglog-concurrency threadpool::tests::owner_runs_local_work_depth_first_before_global_work
+        PASS [   0.007s] (1132/1315) egglog-concurrency threadpool::tests::panic_from_local_work_is_propagated_after_the_scope_drains
+        PASS [   0.006s] (1133/1315) egglog-concurrency threadpool::tests::parallel_for_each_processes_borrowed_items
+        PASS [   0.007s] (1134/1315) egglog-concurrency threadpool::tests::parallel_for_each_waits_for_all_work
+        PASS [   0.007s] (1135/1315) egglog-concurrency threadpool::tests::pool_scope_installs_pool_for_root_and_spawned_callbacks
+        PASS [   0.006s] (1136/1315) egglog-concurrency threadpool::tests::primary_workers_are_marked_as_background_workers
+        PASS [   0.021s] (1137/1315) egglog-concurrency threadpool::tests::root_scope_waits_for_spawned_work
+        PASS [   0.007s] (1138/1315) egglog-concurrency threadpool::tests::scope_allows_borrowing_stack_data
+        PASS [   0.007s] (1139/1315) egglog-concurrency threadpool::tests::scope_allows_one_task_to_mutate_stack_data
+        PASS [   0.007s] (1140/1315) egglog-concurrency threadpool::tests::scope_handles_work_completed_before_expected_is_published
+        PASS [   0.007s] (1141/1315) egglog-concurrency threadpool::tests::scope_root_callback_can_borrow_shorter_scheduling_data
+        PASS [   0.008s] (1142/1315) egglog-concurrency threadpool::tests::scope_runs_spawned_work_and_waits
+        PASS [   0.022s] (1143/1315) egglog-concurrency threadpool::tests::scope_waits_for_last_work_after_expected_is_published
+        PASS [   0.007s] (1144/1315) egglog-concurrency threadpool::tests::spawn_local_does_not_use_a_different_pools_worker_queue
+        PASS [   0.007s] (1145/1315) egglog-concurrency threadpool::tests::spawn_local_from_root_falls_back_to_global_queue
+        PASS [   0.007s] (1146/1315) egglog-concurrency threadpool::tests::spawn_remains_a_global_queue_compatibility_alias
+        PASS [   0.013s] (1147/1315) egglog-concurrency threadpool::tests::stalled_time_snapshots_include_stalls_in_progress
+        PASS [   0.007s] (1148/1315) egglog-concurrency threadpool::tests::stalled_worker_signal_causes_public_local_work_to_be_donated
+        PASS [   0.007s] (1149/1315) egglog-concurrency threadpool::tests::static_scope_still_allows_local_scheduling_iterator
+        PASS [   0.007s] (1150/1315) egglog-concurrency threadpool::tests::without_current_pool_clears_and_restores_current_pool
+        PASS [   0.007s] (1151/1315) egglog-concurrency threadpool::tests::worker_panic_is_propagated_after_other_tasks_finish
+        PASS [   0.013s] (1152/1315) egglog-core-relations action::tests::fill_vec
+        PASS [   0.008s] (1153/1315) egglog-core-relations action::tests::mask_iter
+        PASS [   0.008s] (1154/1315) egglog-core-relations action::tests::mask_iter_dyn
+        PASS [   0.008s] (1155/1315) egglog-core-relations action::tests::mask_iter_zip
+        PASS [   0.008s] (1156/1315) egglog-core-relations action::tests::predicted_vals_resolve_hash_collisions_with_the_backing_rows
+        PASS [   0.007s] (1157/1315) egglog-core-relations action::tests::predicted_vals_store_rows_contiguously
+        PASS [   0.007s] (1158/1315) egglog-core-relations action::tests::retain
+        PASS [   0.008s] (1159/1315) egglog-core-relations action::tests::test_early_stop_initial_state
+        PASS [   0.007s] (1160/1315) egglog-core-relations action::tests::test_early_stop_multiple_clones
+        PASS [   0.008s] (1161/1315) egglog-core-relations action::tests::test_early_stop_shared_across_clones
+        PASS [   0.008s] (1162/1315) egglog-core-relations action::tests::test_early_stop_trigger
+        PASS [   0.007s] (1163/1315) egglog-core-relations base_values::tests::base_printing
+        PASS [   0.007s] (1164/1315) egglog-core-relations base_values::tests::roundtrip_bool
+        PASS [   0.008s] (1165/1315) egglog-core-relations base_values::tests::roundtrip_medium_integers_interned
+        PASS [   0.008s] (1166/1315) egglog-core-relations base_values::tests::roundtrip_medium_integers_unboxable
+        PASS [   0.007s] (1167/1315) egglog-core-relations base_values::tests::roundtrip_small_integers
+        PASS [   0.008s] (1168/1315) egglog-core-relations base_values::tests::roundtrip_unit
+        PASS [   0.008s] (1169/1315) egglog-core-relations containers::tests::incremental_reinsert_canonicalizes_displaced_outer_id
+        PASS [   0.007s] (1170/1315) egglog-core-relations containers::tests::nonincremental_dirty_ids_only_include_stable_ids
+        PASS [   0.009s] (1171/1315) egglog-core-relations containers::tests::racing_inserts
+        PASS [   0.009s] (1172/1315) egglog-core-relations free_join::execute::top_index_tests::catalog_candidates_require_constraints_before_terminal_match
+        PASS [   0.008s] (1173/1315) egglog-core-relations free_join::execute::top_index_tests::catalog_candidates_require_live_rows_before_terminal_match
+        PASS [   0.007s] (1174/1315) egglog-core-relations free_join::execute::top_index_tests::filtered_index_ranges_are_complete_disjoint_and_coarse
+        PASS [   0.007s] (1175/1315) egglog-core-relations free_join::execute::top_index_tests::fused_cover_partitions_are_complete_disjoint_and_coarse
+        PASS [   0.007s] (1176/1315) egglog-core-relations free_join::execute::top_index_tests::fused_cover_scan_bounds_preserve_nonzero_subset_origins
+        PASS [   0.007s] (1177/1315) egglog-core-relations free_join::execute::top_index_tests::mixed_recursive_dvo_keeps_the_plan_prefix_as_its_refinement_anchor
+        PASS [   0.007s] (1178/1315) egglog-core-relations free_join::execute::top_index_tests::packed_tail_shape_preserves_direct_graph_path
+        PASS [   0.007s] (1179/1315) egglog-core-relations free_join::execute::top_index_tests::packed_tail_shape_stops_at_cover_and_reorder_barriers
+        PASS [   0.008s] (1180/1315) egglog-core-relations free_join::execute::top_index_tests::packed_tail_shape_uses_dynamic_families_for_dvo_choice
+        PASS [   0.007s] (1181/1315) egglog-core-relations free_join::execute::top_index_tests::prepared_tail_masks_match_scanner_for_every_permutation_and_suffix
+        PASS [   0.007s] (1182/1315) egglog-core-relations free_join::execute::top_index_tests::prepared_tail_masks_use_u64_boundary_and_fallback_after_it
+        PASS [   0.009s] (1183/1315) egglog-core-relations free_join::execute::top_index_tests::shared_root_projection_keys_are_canonical_and_single_flight
+        PASS [   0.008s] (1184/1315) egglog-core-relations free_join::execute::top_index_tests::task_clone_keeps_each_live_materialization_once_in_dynamic_order
+        PASS [   0.007s] (1185/1315) egglog-core-relations free_join::execute::top_index_tests::task_clone_keeps_only_atoms_in_the_dynamic_join_tail
+        PASS [   0.007s] (1186/1315) egglog-core-relations free_join::frame_update::tests::buffered_update_instruction_stays_compact
+        PASS [   0.007s] (1187/1315) egglog-core-relations free_join::frame_update::tests::clear_resets_checkpoints_and_allows_reuse
+        PASS [   0.008s] (1188/1315) egglog-core-relations free_join::frame_update::tests::drain_preserves_instruction_order_and_side_buffer_pairing
+        PASS [   0.007s] (1189/1315) egglog-core-relations free_join::frame_update::tests::rollback_discards_partial_side_payloads_and_rebases_ids
+        PASS [   0.007s] (1190/1315) egglog-core-relations free_join::packed_cache::tests::root_projection_is_a_final_dense_or_sparse_index
+        PASS [   0.009s] (1191/1315) egglog-core-relations free_join::packed_trie::tests::packed_cursor_checks_key_ordinal
+        PASS [   0.009s] (1192/1315) egglog-core-relations free_join::packed_trie::tests::packed_cursor_child_index_is_published_once_under_race
+        PASS [   0.008s] (1193/1315) egglog-core-relations free_join::packed_trie::tests::packed_cursor_child_index_reuses_cached_node
+        PASS [   0.007s] (1194/1315) egglog-core-relations free_join::packed_trie::tests::packed_cursor_child_index_uses_prefiltered_subset
+        PASS [   0.007s] (1195/1315) egglog-core-relations free_join::packed_trie::tests::packed_cursor_rejects_cached_child_with_another_shape
+        PASS [   0.007s] (1196/1315) egglog-core-relations free_join::packed_trie::tests::packed_dynamic_children_keep_two_successor_families_distinct
+        PASS [   0.010s] (1197/1315) egglog-core-relations free_join::packed_trie::tests::packed_dynamic_same_family_converges_under_race
+        PASS [   0.008s] (1198/1315) egglog-core-relations free_join::packed_trie::tests::packed_trie_builds_from_prefiltered_subset_with_reusable_scratch
+        PASS [   0.007s] (1199/1315) egglog-core-relations free_join::packed_trie::tests::packed_trie_builds_sorted_ranges
+        PASS [   0.007s] (1200/1315) egglog-core-relations free_join::packed_trie::tests::packed_trie_child_is_published_once_under_race
+        PASS [   0.007s] (1201/1315) egglog-core-relations free_join::packed_trie::tests::packed_trie_duplicate_rows_are_not_misclassified_as_dense
+        PASS [   0.008s] (1202/1315) egglog-core-relations free_join::packed_trie::tests::packed_trie_header_is_exactly_two_u32s
+        PASS [   0.008s] (1203/1315) egglog-core-relations free_join::packed_trie::tests::packed_trie_leaf_omits_child_locks
+        PASS [   0.013s] (1204/1315) egglog-core-relations free_join::packed_trie::tests::packed_trie_leaf_rejects_child_publication
+        PASS [   0.007s] (1205/1315) egglog-core-relations free_join::packed_trie::tests::packed_trie_rejects_key_count_that_uses_shape_bit
+        PASS [   0.008s] (1206/1315) egglog-core-relations free_join::packed_trie::tests::packed_trie_sections_are_aligned
+        PASS [   0.007s] (1207/1315) egglog-core-relations free_join::prepared_index::tests::continuation_positions_remain_compact
+        PASS [   0.007s] (1208/1315) egglog-core-relations free_join::prepared_index::tests::cover_only_stages_skip_prepared_index_state
+        PASS [   0.008s] (1209/1315) egglog-core-relations free_join::prepared_index::tests::direct_root_continuation_rejects_different_successors
+        PASS [   0.008s] (1210/1315) egglog-core-relations free_join::prepared_index::tests::root_continuation_cache_reuses_direct_and_dynamic_slots
+        PASS [   0.007s] (1211/1315) egglog-core-relations free_join::prepared_index::tests::root_continuation_prepare_revalidates_initialized_shape
+        PASS [   0.006s] (1212/1315) egglog-core-relations free_join::probe::tests::arena_handle_is_created_only_on_first_packed_allocation
+        PASS [   0.007s] (1213/1315) egglog-core-relations free_join::probe::tests::sorted_multi_probe_gallops_across_skewed_gaps
+        PASS [   0.007s] (1214/1315) egglog-core-relations free_join::probe::tests::sorted_multi_probe_keeps_a_monotone_cursor_across_batches
+        PASS [   0.007s] (1215/1315) egglog-core-relations free_join::probe::tests::sorted_seek_reads_an_immediate_hit_once
+        PASS [   0.006s] (1216/1315) egglog-core-relations free_join::residual_index::tests::small_column_index_groups_keys_and_sorts_inline_rows
+        PASS [   0.007s] (1217/1315) egglog-core-relations free_join::residual_index::tests::sorted_match_ordinal_reconstructs_row_carrying_small_probe
+        PASS [   0.007s] (1218/1315) egglog-core-relations hash_index::tests::basic_updates
+        PASS [   0.007s] (1219/1315) egglog-core-relations hash_index::tests::coarse_index_scan_partitions_are_bounded
+        PASS [   0.041s] (1220/1315) egglog-core-relations hash_index::tests::column_index_rebuild_matches_oracle
+        PASS [   0.008s] (1221/1315) egglog-core-relations hash_index::tests::multi_column_column_index_rebuild_orders_each_value_by_row
+        PASS [   0.009s] (1222/1315) egglog-core-relations hash_index::tests::parallel_column_index_handles_sparse_source_partitions
+        PASS [   0.008s] (1223/1315) egglog-core-relations hash_index::tests::physical_shards_partition_index_iteration
+        PASS [   0.011s] (1224/1315) egglog-core-relations hash_index::tests::positioned_lookups_and_iteration_agree
+        PASS [   0.008s] (1225/1315) egglog-core-relations hash_index::tests::positions_survive_incremental_insertions
+        PASS [   0.007s] (1226/1315) egglog-core-relations offsets::tests::bad_offset_range
+        PASS [   0.007s] (1227/1315) egglog-core-relations offsets::tests::bad_offset_stride
+        PASS [   0.006s] (1228/1315) egglog-core-relations offsets::tests::intersect
+        PASS [   0.006s] (1229/1315) egglog-core-relations offsets::tests::intersect_sparse_sparse_skewed
+        PASS [   0.006s] (1230/1315) egglog-core-relations offsets::tests::iter_bounded
+        PASS [   0.007s] (1231/1315) egglog-core-relations offsets::tests::not_sorted_vec_push
+        PASS [   0.007s] (1232/1315) egglog-core-relations offsets::tests::subset_push
+        PASS [   0.007s] (1233/1315) egglog-core-relations parallel::tests::chunk_map_reports_bases_and_covers_each_item_once
+        PASS [   0.006s] (1234/1315) egglog-core-relations parallel_heuristics::tests::top_index_partitioning_rejects_serial_tiny_and_skewed_shapes
+        PASS [   0.006s] (1235/1315) egglog-core-relations pool::tests::pooled_does_not_drop
+        PASS [   0.007s] (1236/1315) egglog-core-relations pool::tests::refcount
+        PASS [   0.007s] (1237/1315) egglog-core-relations row_buffer::tests::basic_tagged_row
+        PASS [   0.006s] (1238/1315) egglog-core-relations row_buffer::tests::parallel_row_buf_append_contents
+        PASS [   0.007s] (1239/1315) egglog-core-relations row_buffer::tests::remap_basic
+        PASS [   0.007s] (1240/1315) egglog-core-relations row_buffer::tests::remap_narrow
+        PASS [   0.007s] (1241/1315) egglog-core-relations table::rebuild::tests::rebuild_partitions_are_coarse_and_nonzero
+        PASS [   0.008s] (1242/1315) egglog-core-relations table::tests::cached_hashes_stay_aligned_through_parallel_duplicate_staging
+        PASS [   0.007s] (1243/1315) egglog-core-relations table::tests::compact_hash_layouts_remain_small
+        PASS [   0.007s] (1244/1315) egglog-core-relations table::tests::compact_hash_preserves_bucket_bits_and_exact_h2_tag
+        PASS [   0.007s] (1245/1315) egglog-core-relations table::tests::empty_key
+        PASS [   0.007s] (1246/1315) egglog-core-relations table::tests::full_hash_routes_before_omitted_shard_bits_are_compacted
+        PASS [   0.007s] (1247/1315) egglog-core-relations table::tests::hashed_row_buffer_round_trips_max_compact_hash_in_trailing_lane
+        PASS [   0.007s] (1248/1315) egglog-core-relations table::tests::insert_scan
+        PASS [   0.007s] (1249/1315) egglog-core-relations table::tests::insert_scan_sorted
+        PASS [   0.007s] (1250/1315) egglog-core-relations table::tests::known_row_removals_match_the_staged_row_id
+        PASS [   0.007s] (1251/1315) egglog-core-relations table::tests::parallel_insert_merges_duplicate_split_across_flushes
+        PASS [   0.007s] (1252/1315) egglog-core-relations table::tests::parallel_insert_preserves_coalesced_merge_parenthesization
+        PASS [   0.008s] (1253/1315) egglog-core-relations table::tests::parallel_insert_reports_no_change_when_merge_rejects_update
+        PASS [   0.007s] (1254/1315) egglog-core-relations table::tests::parallel_insert_uses_merge_output_for_existing_row
+        PASS [   0.016s] (1255/1315) egglog-core-relations table::tests::parallel_unsorted_rehash_compacts_heavy_stale_rows_and_repoints_entries
+        PASS [   0.008s] (1256/1315) egglog-core-relations table::tests::parallel_unsorted_rehash_handles_no_live_rows
+        PASS [   0.007s] (1257/1315) egglog-core-relations table::tests::pending_cached_hash_mutations_survive_table_clone
+        PASS [   0.007s] (1258/1315) egglog-core-relations table::tests::same_shard_compact_collision_survives_parallel_insert_and_delete
+        PASS [   0.007s] (1259/1315) egglog-core-relations table::tests::same_shard_compact_collision_survives_table_lifecycle
+        PASS [   0.009s] (1260/1315) egglog-core-relations table::tests::shard_math
+        PASS [   0.012s] (1261/1315) egglog-core-relations tests::ac_fj_mincover
+        PASS [   0.012s] (1262/1315) egglog-core-relations tests::ac_fj_puresize
+        PASS [   0.012s] (1263/1315) egglog-core-relations tests::ac_gj
+        PASS [   0.011s] (1264/1315) egglog-core-relations tests::basic_query
+        PASS [   0.010s] (1265/1315) egglog-core-relations tests::call_external_with_fallback
+        PASS [   0.028s] (1266/1315) egglog-core-relations tests::early_stop
+        PASS [   0.011s] (1267/1315) egglog-core-relations tests::empty_terminal_shared_root_index_is_probed_without_packed_nodes
+        PASS [   0.007s] (1268/1315) egglog-core-relations tests::external_context_reaches_external_functions
+        PASS [   0.011s] (1269/1315) egglog-core-relations tests::fused_cover_partitions_preserve_matches_and_actions
+        PASS [   0.011s] (1270/1315) egglog-core-relations tests::fused_cover_partitions_preserve_seminaive_subset
+        PASS [   0.019s] (1271/1315) egglog-core-relations tests::gj_decomposed_small_top_materialization_uses_local_queue
+        PASS [   0.012s] (1272/1315) egglog-core-relations tests::gj_filtered_top_index_ranges_preserve_count_and_materialization
+        PASS [   0.009s] (1273/1315) egglog-core-relations tests::gj_small_top_fallback_uses_local_queue
+        PASS [   0.012s] (1274/1315) egglog-core-relations tests::gj_top_index_shards_preserve_count_and_materialization
+        PASS [   0.011s] (1275/1315) egglog-core-relations tests::inline_multi_column_exact_probe_matches_oracle
+        PASS [   0.010s] (1276/1315) egglog-core-relations tests::intersection_test_fj_mincover
+        PASS [   0.010s] (1277/1315) egglog-core-relations tests::intersection_test_fj_puresize
+        PASS [   0.011s] (1278/1315) egglog-core-relations tests::intersection_test_gj
+        PASS [   0.010s] (1279/1315) egglog-core-relations tests::line_graph_1_fj_mincover
+        PASS [   0.010s] (1280/1315) egglog-core-relations tests::line_graph_1_fj_puresize
+        PASS [   0.010s] (1281/1315) egglog-core-relations tests::line_graph_1_gj
+        PASS [   0.010s] (1282/1315) egglog-core-relations tests::line_graph_2_fj_mincover
+        PASS [   0.010s] (1283/1315) egglog-core-relations tests::line_graph_2_fj_puresize
+        PASS [   0.010s] (1284/1315) egglog-core-relations tests::line_graph_2_gj
+        PASS [   0.011s] (1285/1315) egglog-core-relations tests::lookup_with_fallback_partial_success
+        PASS [   0.011s] (1286/1315) egglog-core-relations tests::minimal_ac
+        PASS [   0.007s] (1287/1315) egglog-core-relations tests::ordinary_counter_remains_exact_in_execution_state
+        PASS [   0.028s] (1288/1315) egglog-core-relations tests::packed_dvo_switches_successor_families_and_matches_oracle
+        PASS [   0.010s] (1289/1315) egglog-core-relations tests::packed_execution_references_do_not_cross_rule_set_runs
+        PASS [   0.010s] (1290/1315) egglog-core-relations tests::packed_root_filters_slow_constraints_before_grouping
+        PASS [   0.010s] (1291/1315) egglog-core-relations tests::packed_root_scan_omits_stale_rows_without_a_slow_constraint
+        PASS [   0.011s] (1292/1315) egglog-core-relations tests::packed_three_column_exact_probe_matches_oracle
+        PASS [   0.011s] (1293/1315) egglog-core-relations tests::packed_uncacheable_root_matches_oracle
+        PASS [   0.007s] (1294/1315) egglog-core-relations tests::prepared_plan_indexes_preserve_uncacheable_columns
+        PASS [   0.007s] (1295/1315) egglog-core-relations tests::prepared_plan_indexes_refresh_across_runs_and_clear
+        PASS [   0.008s] (1296/1315) egglog-core-relations tests::reservable_counter_is_unique_across_execution_states
+        PASS [   0.007s] (1297/1315) egglog-core-relations tests::reservable_counter_recycles_execution_state_tails
+        PASS [   0.011s] (1298/1315) egglog-core-relations tests::shared_root_indexes_are_single_flight_and_execution_scoped
+        PASS [   0.011s] (1299/1315) egglog-core-relations tests::small_live_residuals_stay_inline_and_filter_stale_rows
+        PASS [   0.011s] (1300/1315) egglog-core-relations tests::terminal_shared_root_index_is_probed_without_packed_nodes
+        PASS [   0.007s] (1301/1315) egglog-core-relations uf::tests::displaced
+        PASS [   0.014s] (1302/1315) egglog-core-relations uf::tests::parallel_merge_matches_serial_timestamp_oracle
+        PASS [   0.010s] (1303/1315) egglog-core-relations uf::tests::parallel_merge_preserves_timestamp_order_and_lookup
+        PASS [   0.009s] (1304/1315) egglog-core-relations uf::tests::parallel_merge_records_each_displaced_root_once_under_contention
+        PASS [   0.010s] (1305/1315) egglog-numeric-id tests::basic_id_map
+        PASS [   0.007s] (1306/1315) egglog-numeric-id tests::basic_id_vec
+        PASS [   0.006s] (1307/1315) egglog-numeric-id tests::get_or_insert
+        PASS [   0.007s] (1308/1315) egglog-numeric-id tests::id_out_of_bounds
+        PASS [   0.007s] (1309/1315) egglog-numeric-id tests::push
+        PASS [   0.011s] (1310/1315) egglog-union-find concurrent::tests::buffer_multi_threaded
+        PASS [   0.007s] (1311/1315) egglog-union-find concurrent::tests::buffer_single_threaded
+        PASS [   0.009s] (1312/1315) egglog-union-find concurrent::tests::uf_multi_threaded
+        PASS [   0.007s] (1313/1315) egglog-union-find concurrent::tests::uf_single_theaded
+        PASS [   0.006s] (1314/1315) egglog-union-find tests::basic_uf
+        PASS [   0.006s] (1315/1315) egglog-union-find tests::serial_union_find_supports_scoped_atomic_updates
+────────────
+     Summary [ 810.136s] 1315 tests run: 1315 passed (2 slow), 0 skipped
+warning: insta won't run a separate doctest process when using nextest in the future. Pass `--disable-nextest-doctest` (or `--dnd`) to update to this behavior now and silence this warning.
+warning: doc tests are not supported for crate type(s) `cdylib` in package `egglog-wasm-example`
+    Finished `release` profile [optimized] target(s) in 0.25s
+   Doc-tests egglog
+
+running 13 tests
+iiiii........
+test result: ok. 8 passed; 0 failed; 5 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+
+running 5 tests
+i....
+test result: ok. 4 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.28s
+
+all doctests ran in 1.58s; merged doctests compilation took 0.93s
+   Doc-tests egglog_add_primitive
+
+running 2 tests
+ii
+test result: ok. 0 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests egglog_ast
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests egglog_bridge
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests egglog_concurrency
+
+running 18 tests
+..................
+test result: ok. 18 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+
+running 5 tests
+.....
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.11s
+
+all doctests ran in 0.65s; merged doctests compilation took 0.29s
+   Doc-tests egglog_core_relations
+
+running 2 tests
+..
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests egglog_numeric_id
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests egglog_reports
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests egglog_union_find
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+info: no unreferenced snapshots found
+info: no snapshots to review

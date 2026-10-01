@@ -1,0 +1,110 @@
+info: component clippy is up to date
+cargo clippy --tests -- -D warnings
+    Checking egglog-numeric-id v3.0.0 ($STUDY/candidate/numeric-id)
+    Checking egglog-concurrency v3.0.0 ($STUDY/candidate/concurrency)
+    Checking egglog-reports v3.0.0 ($STUDY/candidate/egglog-reports)
+    Checking egglog-union-find v3.0.0 ($STUDY/candidate/union-find)
+    Checking egglog-core-relations v3.0.0 ($STUDY/candidate/core-relations)
+   Compiling egglog v3.0.0 ($STUDY/candidate)
+    Checking egglog-bridge v3.0.0 ($STUDY/candidate/egglog-bridge)
+    Checking egglog-ast v3.0.0 ($STUDY/candidate/egglog-ast)
+   Compiling egglog-add-primitive v3.0.0 ($STUDY/candidate/src/sort/add_primitive)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 10.41s
+info: component rustfmt is up to date
+cargo fmt --check
+cargo doc --workspace
+    Checking egglog-numeric-id v3.0.0 ($STUDY/candidate/numeric-id)
+    Checking egglog-concurrency v3.0.0 ($STUDY/candidate/concurrency)
+    Checking egglog-reports v3.0.0 ($STUDY/candidate/egglog-reports)
+    Checking egglog-union-find v3.0.0 ($STUDY/candidate/union-find)
+ Documenting egglog-numeric-id v3.0.0 ($STUDY/candidate/numeric-id)
+ Documenting egglog-concurrency v3.0.0 ($STUDY/candidate/concurrency)
+    Checking egglog-core-relations v3.0.0 ($STUDY/candidate/core-relations)
+ Documenting egglog-reports v3.0.0 ($STUDY/candidate/egglog-reports)
+   Compiling egglog v3.0.0 ($STUDY/candidate)
+ Documenting egglog-union-find v3.0.0 ($STUDY/candidate/union-find)
+ Documenting egglog-core-relations v3.0.0 ($STUDY/candidate/core-relations)
+warning: public documentation for `has_stale_rows` links to private item `Value::stale`
+   --> core-relations/src/table_spec.rs:292:27
+    |
+292 |     /// has been set to [`Value::stale()`]). The default implementation returns `true`
+    |                           ^^^^^^^^^^^^^^ this item is private
+    |
+    = note: this link will resolve properly if you pass `--document-private-items`
+    = note: `#[warn(rustdoc::private_intra_doc_links)]` on by default
+
+warning: `egglog-core-relations` (lib doc) generated 1 warning
+    Checking egglog-bridge v3.0.0 ($STUDY/candidate/egglog-bridge)
+    Checking egglog-ast v3.0.0 ($STUDY/candidate/egglog-ast)
+   Compiling egglog-add-primitive v3.0.0 ($STUDY/candidate/src/sort/add_primitive)
+ Documenting egglog-bridge v3.0.0 ($STUDY/candidate/egglog-bridge)
+ Documenting egglog-ast v3.0.0 ($STUDY/candidate/egglog-ast)
+warning: unresolved link to `Command::Rule`
+  --> egglog-ast/src/generic_ast.rs:24:41
+   |
+24 | /// Facts are the left-hand side of a [`Command::Rule`].
+   |                                         ^^^^^^^^^^^^^ no item named `Command` in scope
+   |
+   = note: `#[warn(rustdoc::broken_intra_doc_links)]` on by default
+
+warning: unresolved link to `Command::Action`
+  --> egglog-ast/src/generic_ast.rs:52:34
+   |
+52 |     /// At the top level (in a [`Command::Action`]), this defines a global variable.
+   |                                  ^^^^^^^^^^^^^^^ no item named `Command` in scope
+
+warning: unresolved link to `Command::Rule`
+  --> egglog-ast/src/generic_ast.rs:53:16
+   |
+53 |     /// In a [`Command::Rule`], this defines a local variable in the actions.
+   |                ^^^^^^^^^^^^^ no item named `Command` in scope
+
+warning: `egglog-ast` (lib doc) generated 3 warnings
+ Documenting egglog-add-primitive v3.0.0 ($STUDY/candidate/src/sort/add_primitive)
+ Documenting egglog v3.0.0 ($STUDY/candidate)
+warning: public documentation for `Justification` links to private item `RawProof`
+   --> src/proofs/proof_format.rs:150:19
+    |
+150 | /// Compared to [`RawProof`], a [`Justification`] is always paired with the [`Proposition`] being proven (in a [`Proof`]).
+    |                   ^^^^^^^^ this item is private
+    |
+    = note: this link will resolve properly if you pass `--document-private-items`
+    = note: `#[warn(rustdoc::private_intra_doc_links)]` on by default
+
+warning: public documentation for `Justification` links to private item `RawProof::Rule`
+   --> src/proofs/proof_format.rs:152:13
+    |
+152 | /// while [`RawProof::Rule`] leaves this implicit.
+    |             ^^^^^^^^^^^^^^ this item is private
+    |
+    = note: this link will resolve properly if you pass `--document-private-items`
+
+warning: unresolved link to `Fact`
+   --> src/proofs/proof_format.rs:161:29
+    |
+161 |     /// for each premise ([`Fact`]) of the rule.
+    |                             ^^^^ no item named `Fact` in scope
+    |
+    = help: to escape `[` and `]` characters, add '\' before them like `\[` or `\]`
+    = note: `#[warn(rustdoc::broken_intra_doc_links)]` on by default
+
+warning: unresolved link to `Propostion`
+   --> src/proofs/proof_format.rs:162:18
+    |
+162 |     /// If the [`Propostion`] proven is a term like `t = t`,
+    |                  ^^^^^^^^^^ no item named `Propostion` in scope
+    |
+    = help: to escape `[` and `]` characters, add '\' before them like `\[` or `\]`
+
+warning: public documentation for `query` links to private item `HashMap`
+    --> src/lib.rs:2541:34
+     |
+2541 |     /// `facts` and return one [`HashMap`] per match, keyed by variable
+     |                                  ^^^^^^^ this item is private
+     |
+     = note: this link will resolve properly if you pass `--document-private-items`
+
+warning: `egglog` (lib doc) generated 5 warnings
+ Documenting egglog-wasm-example v0.0.0 ($STUDY/candidate/wasm-example)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 13.92s
+   Generated $SCRATCH/egglog-transfer-20260930-target/doc/egglog/index.html and 9 other files

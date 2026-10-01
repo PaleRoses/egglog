@@ -26,24 +26,24 @@
     },
     {
       "file": "tests/extraction_proof_mode.rs",
-      "added": 85,
+      "added": 70,
       "removed": 0,
-      "net": 85
+      "net": 70
     },
     {
       "file": "tests/integration_test.rs",
-      "added": 223,
+      "added": 182,
       "removed": 15,
-      "net": 208
+      "net": 167
     },
     {
       "file": "src/extract/dependency_tests.rs",
-      "added": 172,
+      "added": 143,
       "removed": 0,
-      "net": 172
+      "net": 143
     }
   ],
-  "added": 847,
+  "added": 762,
   "removed": 190,
-  "net": 657
+  "net": 572
 }

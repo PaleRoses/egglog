@@ -1,0 +1,210 @@
+[
+  {
+    "label": "focused-lib",
+    "command": [
+      "cargo",
+      "test",
+      "--release",
+      "--locked",
+      "--lib",
+      "extract::dependency_tests"
+    ],
+    "cwd": "$STUDY/candidate/../candidate",
+    "env": {
+      "CARGO_TARGET_DIR": "$SCRATCH/egglog-transfer-20260930-target",
+      "RUST_LOG": "error",
+      "RUSTUP_TOOLCHAIN": "1.91.0",
+      "CARGO_BUILD_JOBS": "1",
+      "NEXTEST_TEST_THREADS": "1",
+      "RUST_TEST_THREADS": "1",
+      "RAYON_NUM_THREADS": "1",
+      "CARGO_NET_OFFLINE": "true",
+      "CARGO_PROFILE_RELEASE_DEBUG_ASSERTIONS": "true"
+    },
+    "extra": null,
+    "exit": 0,
+    "seconds": 82.86202116706409,
+    "utc": "2026-10-01T12:39:31.889110+00:00",
+    "log": "logs/focused-lib.log",
+    "original_log_sha256": "67e40071a226bfc6ff87e4f91c2acb112b44a2a5c4a0fd90461488caa02a2a6d",
+    "published_log_sha256": "93925475885cf8ac6ecdbca2f335ce5799a276ff8223abb5fddea6cbf22f9e20"
+  },
+  {
+    "label": "focused-api",
+    "command": [
+      "cargo",
+      "test",
+      "--release",
+      "--locked",
+      "--test",
+      "integration_test",
+      "tree_extractor_"
+    ],
+    "cwd": "$STUDY/candidate/../candidate",
+    "env": {
+      "CARGO_TARGET_DIR": "$SCRATCH/egglog-transfer-20260930-target",
+      "RUST_LOG": "error",
+      "RUSTUP_TOOLCHAIN": "1.91.0",
+      "CARGO_BUILD_JOBS": "1",
+      "NEXTEST_TEST_THREADS": "1",
+      "RUST_TEST_THREADS": "1",
+      "RAYON_NUM_THREADS": "1",
+      "CARGO_NET_OFFLINE": "true",
+      "CARGO_PROFILE_RELEASE_DEBUG_ASSERTIONS": "true"
+    },
+    "extra": null,
+    "exit": 0,
+    "seconds": 51.96649466594681,
+    "utc": "2026-10-01T12:40:54.753565+00:00",
+    "log": "logs/focused-api.log",
+    "original_log_sha256": "3daa02bd356c4963901d53a4db4af48d74c4115c18fcf3d4820dd986958205a2",
+    "published_log_sha256": "fafe408b7d3f562211a565968207619d32586935e295513c69c034702bb6f7a9"
+  },
+  {
+    "label": "focused-proof",
+    "command": [
+      "cargo",
+      "test",
+      "--release",
+      "--locked",
+      "--test",
+      "extraction_proof_mode",
+      "extraction_preserves"
+    ],
+    "cwd": "$STUDY/candidate/../candidate",
+    "env": {
+      "CARGO_TARGET_DIR": "$SCRATCH/egglog-transfer-20260930-target",
+      "RUST_LOG": "error",
+      "RUSTUP_TOOLCHAIN": "1.91.0",
+      "CARGO_BUILD_JOBS": "1",
+      "NEXTEST_TEST_THREADS": "1",
+      "RUST_TEST_THREADS": "1",
+      "RAYON_NUM_THREADS": "1",
+      "CARGO_NET_OFFLINE": "true",
+      "CARGO_PROFILE_RELEASE_DEBUG_ASSERTIONS": "true"
+    },
+    "extra": null,
+    "exit": 0,
+    "seconds": 2.2833851671312004,
+    "utc": "2026-10-01T12:41:46.721134+00:00",
+    "log": "logs/focused-proof.log",
+    "original_log_sha256": "ab0b31817950b9354084b4c6e2cbec947ceddba149fe5ec124e0982cc369b5df",
+    "published_log_sha256": "2a51c10c3bf466af98843dd44b5662f03ddac1ceeae49fb3e02242d51b095bf5"
+  },
+  {
+    "label": "full-make-test",
+    "command": [
+      "make",
+      "test"
+    ],
+    "cwd": "$STUDY/candidate/../candidate",
+    "env": {
+      "CARGO_TARGET_DIR": "$SCRATCH/egglog-transfer-20260930-target",
+      "RUST_LOG": "error",
+      "RUSTUP_TOOLCHAIN": "1.91.0",
+      "CARGO_BUILD_JOBS": "1",
+      "NEXTEST_TEST_THREADS": "1",
+      "RUST_TEST_THREADS": "1",
+      "RAYON_NUM_THREADS": "1",
+      "CARGO_NET_OFFLINE": "true",
+      "CARGO_PROFILE_RELEASE_DEBUG_ASSERTIONS": "true"
+    },
+    "extra": null,
+    "exit": 0,
+    "seconds": 1053.687923416961,
+    "utc": "2026-10-01T12:41:49.004975+00:00",
+    "log": "logs/full-make-test.log",
+    "original_log_sha256": "d951c0ceaabb96f7f930095b2c21aa0655c18193841cabf089777c58438bfe10",
+    "published_log_sha256": "3e737d54ffa5d2bbd946bf101e318852d62e821dcf815e7dd799cd7213d7e402"
+  },
+  {
+    "label": "nits",
+    "command": [
+      "make",
+      "nits"
+    ],
+    "cwd": "$STUDY/candidate/../candidate",
+    "env": {
+      "CARGO_TARGET_DIR": "$SCRATCH/egglog-transfer-20260930-target",
+      "RUST_LOG": "error",
+      "RUSTUP_TOOLCHAIN": "1.91.0",
+      "CARGO_BUILD_JOBS": "1",
+      "NEXTEST_TEST_THREADS": "1",
+      "RUST_TEST_THREADS": "1",
+      "RAYON_NUM_THREADS": "1",
+      "CARGO_NET_OFFLINE": "true",
+      "CARGO_PROFILE_RELEASE_DEBUG_ASSERTIONS": "true"
+    },
+    "extra": null,
+    "exit": 0,
+    "seconds": 25.034488833043724,
+    "utc": "2026-10-01T12:59:22.701002+00:00",
+    "log": "logs/nits.log",
+    "original_log_sha256": "f0517d96810665acc2c8318b96ae56d283b31d142b25eb1503954de2b1d19357",
+    "published_log_sha256": "e086a44434ce1599af99b5e34513d2a7fe60f806f320ec9a5795aad032b8963f"
+  },
+  {
+    "label": "no-default-features",
+    "command": [
+      "cargo",
+      "check",
+      "--locked",
+      "--offline",
+      "-p",
+      "egglog",
+      "--no-default-features",
+      "--lib"
+    ],
+    "cwd": "$STUDY/candidate/../candidate",
+    "env": {
+      "CARGO_TARGET_DIR": "$SCRATCH/egglog-transfer-20260930-target",
+      "RUST_LOG": "error",
+      "RUSTUP_TOOLCHAIN": "1.91.0",
+      "CARGO_BUILD_JOBS": "1",
+      "NEXTEST_TEST_THREADS": "1",
+      "RUST_TEST_THREADS": "1",
+      "RAYON_NUM_THREADS": "1",
+      "CARGO_NET_OFFLINE": "true",
+      "CARGO_PROFILE_RELEASE_DEBUG_ASSERTIONS": "true"
+    },
+    "extra": null,
+    "exit": 0,
+    "seconds": 4.464139624964446,
+    "utc": "2026-10-01T12:59:47.736087+00:00",
+    "log": "logs/no-default-features.log",
+    "original_log_sha256": "5958aeb51c13c5225690285c824e40ccb662bc73bd7d8c6454673df34cfdf3c3",
+    "published_log_sha256": "04ea89e33066d3b6788f20bb8b5f0480ec2ac21161d15044081b079115968aeb"
+  },
+  {
+    "label": "wasm",
+    "command": [
+      "make",
+      "test"
+    ],
+    "cwd": "$STUDY/candidate/../candidate/wasm-example",
+    "env": {
+      "CARGO_TARGET_DIR": "$SCRATCH/egglog-transfer-20260930-target",
+      "RUST_LOG": "error",
+      "RUSTUP_TOOLCHAIN": "1.91.0",
+      "CARGO_BUILD_JOBS": "1",
+      "NEXTEST_TEST_THREADS": "1",
+      "RUST_TEST_THREADS": "1",
+      "RAYON_NUM_THREADS": "1",
+      "CARGO_NET_OFFLINE": "true",
+      "CARGO_PROFILE_RELEASE_DEBUG_ASSERTIONS": "true",
+      "BINARYEN_CORES": "1",
+      "WASM_PACK_CACHE": "$SCRATCH/egglog-extraction-20260930-astra/extraction-experiment/regression-study-20261001/results/full-suite/wasm-pack-cache"
+    },
+    "extra": {
+      "PATH": "$SCRATCH/egglog-extraction-20260930-astra/extraction-experiment/regression-study-20261001/results/full-suite/helpers/wasm-bindgen-0.2.104-aarch64-apple-darwin:$SCRATCH/egglog-extraction-20260930-astra/extraction-experiment/regression-study-20261001/results/full-suite/helpers/binaryen-version_117/bin:$USER_HOME/.elan/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/pkg/env/global/bin:$USER_HOME/.codex/tmp/arg0/codex-arg0SY8wpZ:/Applications/ChatGPT.app/Contents/Resources/codex-cli/codex-path:$USER_HOME/.bun/bin:$USER_HOME/Library/pnpm:$USER_HOME/.nvm/versions/node/v22.15.1/bin:/opt/homebrew/opt/llvm/bin:$USER_HOME/.elan/bin:/opt/homebrew/bin:/opt/homebrew/sbin:$USER_HOME/.cargo/bin:$USER_HOME/.cabal/bin:$USER_HOME/.ghcup/bin:$USER_HOME/.local/bin:$USER_HOME/.local/bin",
+      "BINARYEN_CORES": "1",
+      "WASM_PACK_CACHE": "$SCRATCH/egglog-extraction-20260930-astra/extraction-experiment/regression-study-20261001/results/full-suite/wasm-pack-cache"
+    },
+    "exit": 0,
+    "seconds": 118.03532554209232,
+    "utc": "2026-10-01T12:59:52.201977+00:00",
+    "log": "logs/wasm.log",
+    "original_log_sha256": "04ad5257099780a83f669e89b2ee40dbad480154b892ca5b97c5f82e98fcf529",
+    "published_log_sha256": "bfecffbddf191a662a46dc1003080e92c7f0444e838803a0036231c221d0fe33"
+  }
+]

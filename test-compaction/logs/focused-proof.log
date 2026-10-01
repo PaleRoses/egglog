@@ -1,0 +1,9 @@
+   Compiling egglog v3.0.0 ($STUDY/candidate)
+    Finished `release` profile [optimized] target(s) in 1.67s
+     Running tests/extraction_proof_mode.rs ($SCRATCH/egglog-transfer-20260930-target/release/deps/extraction_proof_mode-6fec172e479da6b7)
+
+running 1 test
+test extraction_preserves_wide_rows_and_aliases_after_delayed_dependencies ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2 filtered out; finished in 0.28s
+

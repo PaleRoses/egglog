@@ -1,0 +1,18 @@
+   Compiling egglog-numeric-id v3.0.0 ($STUDY/candidate/numeric-id)
+   Compiling egglog-concurrency v3.0.0 ($STUDY/candidate/concurrency)
+   Compiling egglog-reports v3.0.0 ($STUDY/candidate/egglog-reports)
+   Compiling egglog-union-find v3.0.0 ($STUDY/candidate/union-find)
+   Compiling egglog-core-relations v3.0.0 ($STUDY/candidate/core-relations)
+   Compiling egglog v3.0.0 ($STUDY/candidate)
+   Compiling egglog-bridge v3.0.0 ($STUDY/candidate/egglog-bridge)
+   Compiling egglog-ast v3.0.0 ($STUDY/candidate/egglog-ast)
+   Compiling egglog-add-primitive v3.0.0 ($STUDY/candidate/src/sort/add_primitive)
+    Finished `release` profile [optimized] target(s) in 1m 22s
+     Running unittests src/lib.rs ($SCRATCH/egglog-transfer-20260930-target/release/deps/egglog-837c7d366fdd8f49)
+
+running 2 tests
+test extract::dependency_tests::scheduler_matches_full_scans_across_cutoff_and_scan_orders ... ok
+test extract::dependency_tests::scheduler_preserves_convergent_self_improvements ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 70 filtered out; finished in 0.08s
+

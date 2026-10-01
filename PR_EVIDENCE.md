@@ -42,3 +42,5 @@ hyperfine --warmup 3 --runs 15 'target/release/egglog tests/taylor51.egg'
 Save the normal CLI after benchmark builds. Run timings without simultaneous builds/tests. Exact local commands and binary hashes: [rehearsal records](results/benchmarks/provenance.json).
 
 **Checks:** `make test`, `make nits`, `cargo check --no-default-features --lib`, `make -C wasm-example test`. 1,315 tests, 37 distinct doctests passed; 8 upstream doctests ignored. [Logs](validation-runs.json). Linux, remote CI/coverage and the full performance matrix were not run.
+
+The follow-up compacts only tests (85 fewer lines). The same cases, expected results and rank checks remain; production and benchmark sources are unchanged. The complete local suite was rerun after these edits: [validation](test-compaction/validation-runs.json), [file hashes](final-source.json).
