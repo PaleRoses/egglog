@@ -1076,6 +1076,12 @@ impl Drive<'_> {
         {
             return None;
         }
+        if self.relation && self.ordered && bound.is_empty() {
+            // The projection onto every key column, in order, is the source's
+            // own key map: the Relation stage reads only keys, so it scans the
+            // source instead of a copy.
+            return Some((mat_stage(bag, source, MatScanMode::Relation, &free), false));
+        }
         let target = MatId::from_usize(self.first_projection + self.projections.len());
         let (key, vals) = if self.relation {
             (&free, &bound[..0])
