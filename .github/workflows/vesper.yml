@@ -1,0 +1,71 @@
+name: Vesper
+
+# Our fork's own CI on the self-hosted runner, so a branch is checked and
+# benchmarked without waiting on upstream. Dispatch only: nothing from a
+# pull request ever runs here.
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: branch or SHA to check
+        required: true
+      baseline:
+        description: baseline SHA for bench.py (empty skips the benchmark)
+        required: false
+        default: ""
+  push:
+    branches: [vesper-ci]
+
+concurrency:
+  group: vesper-egglog
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: "0"
+
+jobs:
+  test:
+    runs-on: [self-hosted, linux, egglog]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+      - run: make test
+
+  nits:
+    runs-on: [self-hosted, linux, egglog]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+      - run: make nits
+
+  no-default-features:
+    runs-on: [self-hosted, linux, egglog]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+      - run: cargo check -p egglog --no-default-features --lib
+
+  bench:
+    if: ${{ inputs.baseline != '' }}
+    needs: [test, nits]
+    runs-on: [self-hosted, linux, egglog]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+          fetch-depth: 0
+      - name: Load before the run
+        run: cat /proc/loadavg; cat /sys/class/power_supply/A*/online
+      - name: bench.py baseline vs ref
+        run: python3 scripts/bench.py run ${{ inputs.baseline }} $(git rev-parse HEAD)
+      - name: Report
+        run: python3 scripts/bench.py diff
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bench-diff
+          path: benchmarks/diff_*.md
+          if-no-files-found: error
