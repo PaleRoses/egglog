@@ -62,7 +62,18 @@ jobs:
         with:
           ref: ${{ inputs.ref }}
           fetch-depth: 0
-      - name: Load before the run
+      - name: Wait for a quiet machine
+        # The other runners on this laptop yield CPU weight but still share it;
+        # a benchmark starts only once the one-minute load is under 1.5, or
+        # after 20 minutes, and says which.
+        run: |
+          for i in $(seq 1 120); do
+            load=$(cut -d' ' -f1 /proc/loadavg)
+            awk -v l="$load" 'BEGIN { exit !(l < 1.5) }' && { echo "quiet after $((i*10)) s, load $load"; exit 0; }
+            sleep 10
+          done
+          echo "NOT quiet after 20 min, load $(cut -d' ' -f1 /proc/loadavg); running anyway"
+      - name: Load and power before the run
         run: cat /proc/loadavg; cat /sys/class/power_supply/A*/online
       - name: bench.py baseline vs ref
         env:
