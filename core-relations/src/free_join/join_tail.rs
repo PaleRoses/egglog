@@ -14,13 +14,13 @@ use smallvec::SmallVec;
 
 use crate::{
     common::{IndexMap, Value},
-    numeric_id::{DenseIdMap, IdVec},
+    numeric_id::{DenseIdMap, IdVec, NumericId},
     offsets::Subset,
     row_buffer::{RowBuffer, SmallValueVec, TaggedRowBuffer},
 };
 
 use super::{
-    ActionId, AtomId, ColumnId, Variable,
+    ActionId, AtomId, ColumnId, ColumnIds, Variable,
     frame_update::FrameUpdates,
     packed_cache::OwnedAtomRows,
     packed_trie::ChildShape,
@@ -570,35 +570,76 @@ pub(super) fn sort_plan_by_size_inner(
     }
     // How many times an atom has been intersected/joined
     let mut times_refined = with_pool_set(|ps| ps.get::<DenseIdMap<AtomId, i64>>());
-    let update_refinements =
-        |stage: &JoinStage, refinements: &mut DenseIdMap<AtomId, i64>| match stage {
-            JoinStage::Intersect { scans, .. } => scans.iter().for_each(|scan| {
-                *refinements.get_or_default(scan.atom) += 1;
-            }),
+    // A refinement counts a binding that restricts an atom's subset: a column
+    // whose variable another stage counted earlier already bound restricts
+    // nothing, and adds nothing. `binders[v]` is one more than the index of
+    // the stage that first bound variable `v` in the counted sequence (0 while
+    // unbound). A stage counted twice (in the logical prefix and again when
+    // placed) still counts as before; only a second stage binding the same
+    // variable, which a `Relation` stage and the atoms that share its
+    // variables can be, is affected.
+    let mut binders: SmallVec<[u16; 64]> = SmallVec::new();
+    let update_refinements = |stage_index: usize,
+                              refinements: &mut DenseIdMap<AtomId, i64>,
+                              binders: &mut SmallVec<[u16; 64]>| {
+        let me = u16::try_from(stage_index + 1).expect("too many instructions");
+        let mut stale = |var: Variable| {
+            if binders.len() <= var.index() {
+                binders.resize(var.index() + 1, 0);
+            }
+            let binder = &mut binders[var.index()];
+            if *binder == 0 {
+                *binder = me;
+            }
+            *binder != me
+        };
+        // Columns of `spec` keyed on a stale variable, given `stale` by the
+        // stage's `bind` position and `cols` indexing `bind` through `pos`.
+        let n_stale =
+            |cols: &ColumnIds, stale: &[bool], pos: &dyn Fn(ColumnId) -> Option<usize>| {
+                cols.iter()
+                    .filter(|col| pos(**col).is_some_and(|p| stale[p]))
+                    .count() as i64
+            };
+        match &instrs[stage_index] {
+            JoinStage::Intersect { var, scans } => {
+                if !stale(*var) {
+                    scans.iter().for_each(|scan| {
+                        *refinements.get_or_default(scan.atom) += 1;
+                    })
+                }
+            }
             JoinStage::FusedIntersect {
                 cover,
+                bind,
                 to_intersect,
-                ..
             } => {
+                let stale: SmallVec<[bool; 4]> = bind.iter().map(|(_, var)| stale(*var)).collect();
+                let pos = |col: ColumnId| Some(col.index()).filter(|p| *p < stale.len());
                 *refinements.get_or_default(cover.to_index.atom) +=
-                    cover.to_index.vars.len() as i64;
-                to_intersect.iter().for_each(|(spec, _)| {
+                    cover.to_index.vars.len() as i64 - stale.iter().filter(|s| **s).count() as i64;
+                to_intersect.iter().for_each(|(spec, cols)| {
                     *refinements.get_or_default(spec.to_index.atom) +=
-                        spec.to_index.vars.len() as i64;
+                        spec.to_index.vars.len() as i64 - n_stale(cols, &stale, &pos);
                 });
             }
-            JoinStage::FusedIntersectMat { to_intersect, .. } => {
-                to_intersect.iter().for_each(|(spec, _)| {
+            JoinStage::FusedIntersectMat {
+                bind, to_intersect, ..
+            } => {
+                let stale: SmallVec<[bool; 4]> = bind.iter().map(|(_, var)| stale(*var)).collect();
+                let pos = |col: ColumnId| bind.iter().position(|(c, _)| *c == col);
+                to_intersect.iter().for_each(|(spec, cols)| {
                     *refinements.get_or_default(spec.to_index.atom) +=
-                        spec.to_index.vars.len() as i64;
+                        spec.to_index.vars.len() as i64 - n_stale(cols, &stale, &pos);
                 });
             }
-        };
+        }
+    };
 
     // Count how many times each atom has been refined in the logical plan
     // prefix, as the DVO heuristic does.
-    for stage in &instrs[..range.start] {
-        update_refinements(stage, &mut times_refined);
+    for stage_index in 0..range.start {
+        update_refinements(stage_index, &mut times_refined, &mut binders);
     }
 
     // The variables bound by the physical prefix and by each stage placed
@@ -686,7 +727,7 @@ pub(super) fn sort_plan_by_size_inner(
             }
         }
         // Update the counts after a new instruction is selected.
-        update_refinements(&instrs[order.get(i)], &mut times_refined);
+        update_refinements(order.get(i), &mut times_refined, &mut binders);
         mark_bound(&instrs[order.get(i)], &mut bound);
     }
 }
