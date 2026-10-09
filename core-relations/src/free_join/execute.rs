@@ -49,7 +49,9 @@ use super::{
     },
     packed_cache::{OwnedAtomRows, TrieCache},
     packed_trie::{ChildShape, TrieNode},
-    plan::{JoinHeader, JoinStage, JoinStages, MatId, MatScanMode, MatSpec, Plan},
+    plan::{
+        JoinHeader, JoinStage, JoinStageBlocks, JoinStages, MatId, MatScanMode, MatSpec, Plan,
+    },
     prepared_index::{
         PreparedIndexRef, PreparedJoinIndexes, PreparedPlanIndexes, StageMask,
         columns_are_cacheable,
@@ -342,6 +344,11 @@ impl Database {
                                             binding_info
                                                 .materializations
                                                 .insert(mat_id, Arc::new(materialization));
+                                            run_projections(
+                                                &plan.stages,
+                                                mat_id,
+                                                &mut binding_info.materializations,
+                                            );
                                             materializations = Arc::new(materializations_dearc);
                                         }
                                         join_state.run_join_stages(
@@ -478,6 +485,11 @@ impl Database {
                                         Arc::new(
                                             materializer.materializations.take(mat_id).unwrap(),
                                         ),
+                                    );
+                                    run_projections(
+                                        &plan.stages,
+                                        mat_id,
+                                        &mut binding_info.materializations,
                                     );
                                 }
                                 join_state.run_join_stages(
@@ -2845,6 +2857,58 @@ fn flush_action_states(
             *len = 0;
         }
     }
+}
+
+/// Store the projections of materialization `source` that drive later bags.
+fn run_projections(
+    blocks: &JoinStageBlocks,
+    source: MatId,
+    materializations: &mut DenseIdMap<MatId, Arc<IndexMap<Vec<Value>, RowBuffer>>>,
+) {
+    let key_len = blocks.blocks[source.index()].1.msg_vars.len();
+    for projection in blocks.projections.iter().filter(|p| p.source == source) {
+        let projected =
+            project_materialization(&materializations[source], key_len, &projection.cols);
+        materializations.insert(projection.target, Arc::new(projected));
+    }
+}
+
+/// The distinct values of `cols` over a materialization's rows, as a
+/// materialization that a `KeyOnly` prologue can enumerate. Column `i` is the
+/// `i`th key value for `i < key_len`, and a row value after that.
+fn project_materialization(
+    mat: &IndexMap<Vec<Value>, RowBuffer>,
+    key_len: usize,
+    cols: &[ColumnId],
+) -> IndexMap<Vec<Value>, RowBuffer> {
+    let mut projected = IndexMap::default();
+    let mut scratch = Vec::with_capacity(cols.len());
+    let mut add = |scratch: &Vec<Value>| {
+        if !projected.contains_key(scratch) {
+            let mut placeholder = RowBuffer::new(1);
+            placeholder.add_row(&[Value::stale()]);
+            projected.insert(scratch.clone(), placeholder);
+        }
+    };
+    if cols.iter().all(|col| col.index() < key_len) {
+        for key in mat.keys() {
+            scratch.clear();
+            scratch.extend(cols.iter().map(|col| key[col.index()]));
+            add(&scratch);
+        }
+    } else {
+        for (key, rows) in mat.iter() {
+            for row in rows.iter() {
+                scratch.clear();
+                scratch.extend(cols.iter().map(|col| match col.index().checked_sub(key_len) {
+                    None => key[col.index()],
+                    Some(i) => row[i],
+                }));
+                add(&scratch);
+            }
+        }
+    }
+    projected
 }
 
 struct InPlaceMaterializer<'a> {
