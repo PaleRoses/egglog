@@ -20,7 +20,7 @@ use crate::{
 };
 
 use super::{
-    ActionId, AtomId, Variable,
+    ActionId, AtomId, ColumnId, Variable,
     frame_update::FrameUpdates,
     packed_cache::OwnedAtomRows,
     packed_trie::ChildShape,
@@ -378,6 +378,36 @@ pub(super) fn estimate_size(join_stage: &JoinStage, binding_info: &BindingInfo<'
     }
 }
 
+/// Visit every variable `stage` binds. A `Lookup` binds nothing.
+pub(super) fn for_each_bound_var(stage: &JoinStage, mut f: impl FnMut(Variable)) {
+    match stage {
+        JoinStage::Intersect { var, .. } => f(*var),
+        JoinStage::FusedIntersect { bind, .. } | JoinStage::FusedIntersectMat { bind, .. } => {
+            bind.iter().for_each(|(_, var)| f(*var))
+        }
+    }
+}
+
+/// Which variables of `bind` the stages at positions `..upto` of `order` bind,
+/// by position in `bind`.
+pub(super) fn bound_in_prefix(
+    bind: &[(ColumnId, Variable)],
+    order: &InstrOrder,
+    upto: usize,
+    instrs: &[JoinStage],
+) -> SmallVec<[bool; 4]> {
+    let mut bound: SmallVec<[bool; 4]> = bind.iter().map(|_| false).collect();
+    (0..upto).for_each(|position| {
+        for_each_bound_var(&instrs[order.get(position)], |var| {
+            bind.iter()
+                .zip(bound.iter_mut())
+                .filter(|((_, bvar), _)| *bvar == var)
+                .for_each(|(_, b)| *b = true)
+        })
+    });
+    bound
+}
+
 fn num_intersected_rels(join_stage: &JoinStage) -> i32 {
     match join_stage {
         JoinStage::Intersect { scans, .. } => scans.len() as i32,
@@ -434,8 +464,9 @@ pub(super) fn sort_plan_by_size(
 /// `FusedIntersect` or `FusedIntersectMat { mode: Full | KeyOnly | Value }`,
 /// has an empty `to_intersect`, and no later stage either (a) references the
 /// same cover atom for `FusedIntersect`, or (b) reads one of its bound variables
-/// as a scalar through `FusedIntersectMat { mode: Value | Lookup }`.
-/// `FusedIntersectMat::Lookup` binds nothing itself and is never a leaf scan.
+/// as a scalar through `FusedIntersectMat { mode: Value | Lookup | Relation }`.
+/// `FusedIntersectMat::Lookup` binds nothing itself and is never a leaf scan;
+/// nor is `FusedIntersectMat::Relation`, whose variables may be bound already.
 pub(super) fn recompute_leaf_scans(
     order: &InstrOrder,
     leaf_scans: &mut LeafScans,
@@ -497,7 +528,10 @@ pub(super) fn recompute_leaf_scans(
                     }
                 }
                 JoinStage::FusedIntersectMat {
-                    mode, to_intersect, ..
+                    mode,
+                    bind,
+                    to_intersect,
+                    ..
                 } => {
                     if let Some(ca) = cover_atom
                         && to_intersect.iter().any(|(s, _)| s.to_index.atom == ca)
@@ -507,6 +541,12 @@ pub(super) fn recompute_leaf_scans(
                     }
                     if let MatScanMode::Value(vars) | MatScanMode::Lookup(vars) = mode
                         && vars.iter().any(|v| bind_vars.contains(v))
+                    {
+                        blocked = true;
+                        break;
+                    }
+                    if *mode == MatScanMode::Relation
+                        && bind.iter().any(|(_, v)| bind_vars.contains(v))
                     {
                         blocked = true;
                         break;
@@ -561,6 +601,32 @@ pub(super) fn sort_plan_by_size_inner(
         update_refinements(stage, &mut times_refined);
     }
 
+    // The variables bound by the physical prefix and by each stage placed
+    // since, which a `Relation` stage is keyed on. Only tracked when one is
+    // in the range.
+    let has_relation = range.clone().any(|i| {
+        matches!(
+            &instrs[order.get(i)],
+            JoinStage::FusedIntersectMat {
+                mode: MatScanMode::Relation,
+                ..
+            }
+        )
+    });
+    let mut bound: SmallVec<[Variable; 32]> = SmallVec::new();
+    let mark_bound = |stage: &JoinStage, bound: &mut SmallVec<[Variable; 32]>| {
+        if has_relation {
+            for_each_bound_var(stage, |var| {
+                if !bound.contains(&var) {
+                    bound.push(var);
+                }
+            });
+        }
+    };
+    for position in 0..range.start {
+        mark_bound(&instrs[order.get(position)], &mut bound);
+    }
+
     // We prioritize stages by
     //
     //   (1) how many times an atom used by the stage has been refined,
@@ -570,9 +636,27 @@ pub(super) fn sort_plan_by_size_inner(
     // Estimate size is second so that very small inputs (e.g. FunDep
     // consequents with exactly one value) run before multi-relation stages
     // that happen to have a larger current estimate.
+    //
+    // A `Relation` stage is refined once per variable of its `bind` already
+    // bound, and its size is its key count, or 1 once all are bound (a lookup).
     let key_fn = |join_stage: &JoinStage,
                   binding_info: &BindingInfo<'_, '_>,
-                  refinements: &DenseIdMap<AtomId, i64>| {
+                  refinements: &DenseIdMap<AtomId, i64>,
+                  bound: &SmallVec<[Variable; 32]>| {
+        if let JoinStage::FusedIntersectMat {
+            mode: MatScanMode::Relation,
+            bind,
+            ..
+        } = join_stage
+        {
+            let refine = bind.iter().filter(|(_, var)| bound.contains(var)).count() as i64;
+            let size = if refine == bind.len() as i64 {
+                1
+            } else {
+                estimate_size(join_stage, binding_info)
+            };
+            return (-refine, size, -num_intersected_rels(join_stage));
+        }
         let refine = match join_stage {
             JoinStage::Intersect { scans, .. } => scans
                 .iter()
@@ -593,9 +677,9 @@ pub(super) fn sort_plan_by_size_inner(
     };
 
     for i in range.clone() {
-        let mut key_i = key_fn(&instrs[order.get(i)], binding_info, &times_refined);
+        let mut key_i = key_fn(&instrs[order.get(i)], binding_info, &times_refined, &bound);
         for j in (i + 1)..range.end {
-            let key_j = key_fn(&instrs[order.get(j)], binding_info, &times_refined);
+            let key_j = key_fn(&instrs[order.get(j)], binding_info, &times_refined, &bound);
             if key_j < key_i {
                 order.data.swap(i, j);
                 key_i = key_j;
@@ -603,6 +687,7 @@ pub(super) fn sort_plan_by_size_inner(
         }
         // Update the counts after a new instruction is selected.
         update_refinements(&instrs[order.get(i)], &mut times_refined);
+        mark_bound(&instrs[order.get(i)], &mut bound);
     }
 }
 

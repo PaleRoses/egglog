@@ -44,14 +44,12 @@ use super::{
     frame_update::{FrameUpdates, UpdateInstr},
     join_tail::{
         BindingInfo, BindingSet, BorrowedLocalState, InstrOrder, LeafScans, LocalState,
-        MatchCounter, RetiredLocalStates, SubsetClonePlan, atom_tail_use, estimate_size,
-        materialization_is_live_in_tail, sort_plan_by_size,
+        MatchCounter, RetiredLocalStates, SubsetClonePlan, atom_tail_use, bound_in_prefix,
+        estimate_size, materialization_is_live_in_tail, sort_plan_by_size,
     },
     packed_cache::{OwnedAtomRows, TrieCache},
     packed_trie::{ChildShape, TrieNode},
-    plan::{
-        JoinHeader, JoinStage, JoinStageBlocks, JoinStages, MatId, MatScanMode, MatSpec, Plan,
-    },
+    plan::{JoinHeader, JoinStage, JoinStageBlocks, JoinStages, MatId, MatScanMode, MatSpec, Plan},
     prepared_index::{
         PreparedIndexRef, PreparedJoinIndexes, PreparedPlanIndexes, StageMask,
         columns_are_cacheable,
@@ -2160,7 +2158,9 @@ impl<'a, 'state, 'exec> JoinState<'a, 'state, 'exec> {
                                 }
                             }
                         }
-                        MatScanMode::Lookup(_) => unreachable!("guarded above"),
+                        MatScanMode::Lookup(_) | MatScanMode::Relation => {
+                            unreachable!("guarded above")
+                        }
                     }
                     if buf.is_empty() {
                         return;
@@ -2174,6 +2174,123 @@ impl<'a, 'state, 'exec> JoinState<'a, 'state, 'exec> {
                 if restore_materialization {
                     let previous = binding_info.materializations.insert(*cover, cover_mat);
                     debug_assert!(previous.is_none());
+                }
+            }
+            JoinStage::FusedIntersectMat {
+                cover,
+                mode: MatScanMode::Relation,
+                bind,
+                to_intersect,
+            } => {
+                // A message that is a relation of the bag's join. The stages
+                // before it in the current order may have bound some of its
+                // variables; it matches their values instead of binding them.
+                debug_assert!(
+                    bind.iter()
+                        .enumerate()
+                        .all(|(j, (col, _))| col.index() == j)
+                );
+                let bound = bound_in_prefix(bind, instr_order, cur, &stages.instrs);
+                let bound_vals: SmallVec<[Option<Value>; 4]> = bind
+                    .iter()
+                    .zip(bound.iter())
+                    .map(|((_, var), bound)| bound.then(|| binding_info.bindings[*var]))
+                    .collect();
+                if bound_vals.iter().all(Option::is_some) {
+                    // A lookup: every atom holding one of the variables was
+                    // refined on it by the stage that bound it.
+                    let key: SmallVec<[Value; 4]> = bound_vals.iter().flatten().copied().collect();
+                    if binding_info.materializations[*cover].contains_key(key.as_slice()) {
+                        let mut updates = FrameUpdates::with_capacity(1);
+                        updates.finish_frame();
+                        drain_updates!(updates);
+                    }
+                } else {
+                    let keep_for_tail = materialization_is_live_in_tail(
+                        &stages.instrs,
+                        instr_order,
+                        cur + 1,
+                        *cover,
+                    );
+                    let restore_materialization = !keep_for_tail;
+                    let cover_mat = if keep_for_tail {
+                        Arc::clone(&binding_info.materializations[*cover])
+                    } else {
+                        binding_info.materializations.unwrap_val(*cover)
+                    };
+                    (|| {
+                        let mut updates: FrameUpdates<'rows, 'exec> =
+                            FrameUpdates::with_capacity(cmp::min(chunk_size, cur_size));
+                        // Only the atoms holding a free variable need probing.
+                        let probers: SmallVec<[(usize, Prober<'_, 'rows, 'exec>); 4]> =
+                            to_intersect
+                                .iter()
+                                .zip(prepared_indexes)
+                                .enumerate()
+                                .filter(|(_, ((_, cols), _))| {
+                                    cols.iter().any(|col| bound_vals[col.index()].is_none())
+                                })
+                                .map(|(i, ((spec, _), prepared_slot))| {
+                                    let tail = atom_tail_use(
+                                        spec.to_index.atom,
+                                        &stages.instrs,
+                                        prepared,
+                                        remaining_after_current,
+                                        instr_order,
+                                        cur + 1,
+                                    );
+                                    let prober = self.get_index(
+                                        atoms,
+                                        binding_info,
+                                        ProbeRequest::tuple(
+                                            spec,
+                                            tail.keep_rows,
+                                            tail.child_shape,
+                                            prepared.resolve(prepared_slot),
+                                        ),
+                                    );
+                                    (i, prober)
+                                })
+                                .collect();
+                        let mut key = Vec::with_capacity(4);
+                        'keys: for group_key in cover_mat.keys() {
+                            if bound_vals
+                                .iter()
+                                .zip(group_key.iter())
+                                .any(|(bound, val)| bound.is_some_and(|bound| bound != *val))
+                            {
+                                continue;
+                            }
+                            bind.iter()
+                                .zip(bound_vals.iter())
+                                .filter(|(_, bound)| bound.is_none())
+                                .for_each(|((col, var), _)| {
+                                    updates.push_binding(*var, group_key[col.index()])
+                                });
+                            for (i, prober) in probers.iter() {
+                                let (spec, cols) = &to_intersect[*i];
+                                key.clear();
+                                key.extend(cols.iter().map(|col| group_key[col.index()]));
+                                let Some(subset) = prober.get_subset(&key) else {
+                                    updates.rollback();
+                                    continue 'keys;
+                                };
+                                subset.refine(spec.to_index.atom, &mut updates);
+                            }
+                            updates.finish_frame();
+                            if updates.frames() >= chunk_size {
+                                drain_updates!(updates);
+                            }
+                        }
+                        drain_updates!(updates);
+                        for (i, prober) in probers {
+                            binding_info.move_back(to_intersect[i].0.to_index.atom, prober);
+                        }
+                    })();
+                    if restore_materialization {
+                        let previous = binding_info.materializations.insert(*cover, cover_mat);
+                        debug_assert!(previous.is_none());
+                    }
                 }
             }
             JoinStage::FusedIntersectMat {
@@ -2299,6 +2416,7 @@ impl<'a, 'state, 'exec> JoinState<'a, 'state, 'exec> {
                                 }
                             }
                         }
+                        MatScanMode::Relation => unreachable!("handled above"),
                         MatScanMode::Value(index_vars) | MatScanMode::Lookup(index_vars) => {
                             let keys = index_vars
                                 .iter()

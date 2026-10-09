@@ -93,6 +93,11 @@ define_id!(pub(crate) MatId, u32, "An identifier for materialization within a de
 pub(crate) enum MatScanMode {
     Full,
     KeyOnly,
+    /// A `KeyOnly` scan of a message that is a relation of its bag's join:
+    /// dynamic variable ordering places it by how many of `bind` earlier
+    /// stages have bound, and it matches those against its keys instead of
+    /// binding them (a lookup when all are bound).
+    Relation,
     Value(SmallVec<[Variable; 16]>),
     Lookup(SmallVec<[Variable; 16]>),
 }
@@ -975,7 +980,12 @@ fn count_variable_usage_per_bag(bags: &[PlanningContext]) -> DenseIdMap<Variable
 
 /// A stage that scans materialization `cover` in `mode`, binding `vars` from
 /// its columns in order, and intersects every atom of `bag` on them.
-fn mat_stage(bag: &PlanningContext, cover: MatId, mode: MatScanMode, vars: &[Variable]) -> JoinStage {
+fn mat_stage(
+    bag: &PlanningContext,
+    cover: MatId,
+    mode: MatScanMode,
+    vars: &[Variable],
+) -> JoinStage {
     let bind = vars
         .iter()
         .enumerate()
@@ -1026,6 +1036,10 @@ pub(crate) struct Drive<'p> {
     /// Whether every such message drives its bag as a relation that dynamic
     /// variable ordering places (see [`Drive::stage`]).
     relation: bool,
+    /// Whether such a relation is a [`MatScanMode::Relation`] that leaves its
+    /// variables to the bag's atoms as well, so that the ordering can bind
+    /// them either way (otherwise a `KeyOnly` scan that alone binds them).
+    ordered: bool,
     /// Whether messages only filter their bag, one variable at a time (see
     /// [`Drive::filters`]), instead of driving it.
     filter: bool,
@@ -1053,28 +1067,40 @@ impl Drive<'_> {
         msg: &[Variable],
     ) -> Option<(JoinStage, bool)> {
         let col = |var: &Variable| ColumnId::from_usize(msg.iter().position(|v| v == var).unwrap());
-        let (free, bound): (SmallVec<[Variable; 4]>, SmallVec<[Variable; 4]>) =
-            msg.iter().copied().partition(|var| stripped_bag.vars.contains_key(*var));
+        let (free, bound): (SmallVec<[Variable; 4]>, SmallVec<[Variable; 4]>) = msg
+            .iter()
+            .copied()
+            .partition(|var| stripped_bag.vars.contains_key(*var));
         let holds_all = |atom: &Atom| free.iter().all(|var| atom.vars().any(|v| v == *var));
-        if free.is_empty() || (!self.relation && bag.atoms.iter().any(|(_, atom)| holds_all(atom))) {
+        if free.is_empty() || (!self.relation && bag.atoms.iter().any(|(_, atom)| holds_all(atom)))
+        {
             return None;
         }
         let target = MatId::from_usize(self.first_projection + self.projections.len());
-        let (key, vals) = if self.relation { (&free, &bound[..0]) } else { (&bound, &free[..]) };
+        let (key, vals) = if self.relation {
+            (&free, &bound[..0])
+        } else {
+            (&bound, &free[..])
+        };
         self.projections.push(MatProjection {
             source,
             target,
             key: key.iter().map(col).collect(),
             vals: vals.iter().map(col).collect(),
         });
-        let mode = if self.relation {
+        let mode = if self.relation && self.ordered {
+            MatScanMode::Relation
+        } else if self.relation {
             MatScanMode::KeyOnly
         } else if bound.is_empty() {
             MatScanMode::Full
         } else {
             MatScanMode::Value(bound.iter().copied().collect())
         };
-        Some((mat_stage(bag, target, mode, &free), self.relation && !bound.is_empty()))
+        Some((
+            mat_stage(bag, target, mode, &free),
+            self.relation && !bound.is_empty(),
+        ))
     }
 
     /// Lookups that check each variable of message `msg` (the key of
@@ -1096,8 +1122,11 @@ impl Drive<'_> {
         msg.iter()
             .filter(|var| free(var))
             .map(|x| {
-                let key: SmallVec<[Variable; 16]> =
-                    msg.iter().copied().filter(|var| var == x || !free(var)).collect();
+                let key: SmallVec<[Variable; 16]> = msg
+                    .iter()
+                    .copied()
+                    .filter(|var| var == x || !free(var))
+                    .collect();
                 let target = MatId::from_usize(self.first_projection + self.projections.len());
                 self.projections.push(MatProjection {
                     source,
@@ -1197,12 +1226,24 @@ fn plan_single_bag(
                     .vars
                     .retain(|var, _vinfo| !prev_block.1.msg_vars.contains(&var));
             } else {
-                let drove = drive.as_mut().filter(|drive| !drive.filter).and_then(|drive| {
-                    drive.stage(bag, &stripped_bag, MatId::from_usize(i), &prev_block.1.msg_vars)
-                });
+                let drove = drive
+                    .as_mut()
+                    .filter(|drive| !drive.filter)
+                    .and_then(|drive| {
+                        drive.stage(
+                            bag,
+                            &stripped_bag,
+                            MatId::from_usize(i),
+                            &prev_block.1.msg_vars,
+                        )
+                    });
                 let check = drove.as_ref().is_none_or(|(_, check)| *check);
                 if let Some((stage, _)) = drove {
-                    stripped_bag.vars.retain(|var, _vinfo| !prev_block.1.msg_vars.contains(&var));
+                    if !drive.as_ref().is_some_and(|drive| drive.ordered) {
+                        stripped_bag
+                            .vars
+                            .retain(|var, _vinfo| !prev_block.1.msg_vars.contains(&var));
+                    }
                     drives.push(stage);
                 }
                 if check {
@@ -1277,8 +1318,10 @@ fn build_result_block(blocks: &[(JoinStages, MatSpec)]) -> JoinStages {
 /// How decomposed queries are planned, from `EGGLOG_DECOMP_REDUCE`: unset, as
 /// the chain built by [`topologically_sort_bags`]; `2`, as that chain with
 /// messages driving their bag (see [`Drive`]), `3` with every message a
-/// relation of its bag, and `4` with messages filtering their bag one
-/// variable at a time; `1`, by [`plan_reduced`]
+/// relation of its bag, `4` with messages filtering their bag one variable at
+/// a time, and `5` with every message a relation of its bag that dynamic
+/// variable ordering places among the atoms that also bind its variables
+/// ([`MatScanMode::Relation`]); `1`, by [`plan_reduced`]
 /// rooted at the focus atom's bag; `head`, by [`plan_reduced`] rooted at the
 /// chain's first bag for every variant.
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -1287,6 +1330,7 @@ enum Reduce {
     Drive,
     Relation,
     Filter,
+    Ordered,
     Focus,
     Head,
 }
@@ -1298,6 +1342,7 @@ fn reduce_mode() -> Reduce {
         Ok("2") => Reduce::Drive,
         Ok("3") => Reduce::Relation,
         Ok("4") => Reduce::Filter,
+        Ok("5") => Reduce::Ordered,
         Ok("head") => Reduce::Head,
         _ => Reduce::Off,
     })
@@ -1339,10 +1384,13 @@ fn plan_reduced(
         if holder == head {
             continue;
         }
-        let program = roots.iter().position(|root| *root == holder).unwrap_or_else(|| {
-            roots.push(holder);
-            roots.len() - 1
-        });
+        let program = roots
+            .iter()
+            .position(|root| *root == holder)
+            .unwrap_or_else(|| {
+                roots.push(holder);
+                roots.len() - 1
+            });
         by_atom.insert(atom_id, program);
     }
     let (stages, result_block) = plan_rooted(&bags, head, &starts, strat);
@@ -1390,19 +1438,28 @@ fn plan_rooted(
         order.push((bag, driver));
         next = (0..n)
             .filter(|b| !placed[*b])
-            .flat_map(|b| order.iter().enumerate().map(move |(pos, (p, _))| (b, pos, *p)))
+            .flat_map(|b| {
+                order
+                    .iter()
+                    .enumerate()
+                    .map(move |(pos, (p, _))| (b, pos, *p))
+            })
             .map(|(b, pos, p)| (bags[b].common_vars_with(&bags[p]).count(), b, pos))
             .filter(|(shared, ..)| *shared > 0)
             .max_by_key(|(shared, b, pos)| (*shared, Reverse(*b), Reverse(*pos)))
             .map(|(_, b, pos)| (b, Some(pos)))
             .or_else(|| {
                 let start = starts.iter().copied().find(|b| !placed[*b]);
-                start.or_else(|| (0..n).rev().find(|b| !placed[*b])).map(|b| (b, None))
+                start
+                    .or_else(|| (0..n).rev().find(|b| !placed[*b]))
+                    .map(|b| (b, None))
             });
     }
 
     let in_bags = |positions: &[(usize, Option<usize>)], var: Variable| {
-        positions.iter().any(|(b, _)| bags[*b].vars.contains_key(var))
+        positions
+            .iter()
+            .any(|(b, _)| bags[*b].vars.contains_key(var))
     };
     let specs: Vec<MatSpec> = (0..n)
         .map(|k| {
@@ -1410,7 +1467,9 @@ fn plan_rooted(
                 .vars
                 .iter()
                 .filter(|(var, vinfo)| {
-                    vinfo.used_in_rhs || in_bags(&order[..k], *var) || in_bags(&order[k + 1..], *var)
+                    vinfo.used_in_rhs
+                        || in_bags(&order[..k], *var)
+                        || in_bags(&order[k + 1..], *var)
                 })
                 .map(|(var, _)| var)
                 .partition(|var| in_bags(&order[..k], *var));
@@ -1631,10 +1690,15 @@ pub(crate) fn tree_decompose_and_plan(
             &blocks,
             &mut has_block_contributed,
             &mut n_used_in_bag,
-            matches!(mode, Reduce::Drive | Reduce::Relation | Reduce::Filter).then_some(Drive {
+            matches!(
+                mode,
+                Reduce::Drive | Reduce::Relation | Reduce::Filter | Reduce::Ordered
+            )
+            .then_some(Drive {
                 first_projection,
                 projections: &mut projections,
-                relation: mode == Reduce::Relation,
+                relation: matches!(mode, Reduce::Relation | Reduce::Ordered),
+                ordered: mode == Reduce::Ordered,
                 filter: mode == Reduce::Filter,
             }),
             strat,
