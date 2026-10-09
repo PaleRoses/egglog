@@ -1167,15 +1167,16 @@ fn reduce_mode() -> Reduce {
     })
 }
 
-/// The bag the chain planner runs first, undriven: the last node of the chain
-/// [`topologically_sort_bags`] builds, which has no children and so is one of
-/// `bags` unmerged.
-fn chain_head(bags: &[PlanningContext]) -> usize {
-    let chain = topologically_sort_bags(bags.to_vec());
+/// The bags of the chains [`topologically_sort_bags`] builds that absorbed no
+/// other bag, in the order the chain planner runs them. A chain's first node
+/// has no children, so every chain's undriven first bag is here, ahead of the
+/// rest of its chain.
+fn chain_order(bags: &[PlanningContext]) -> Vec<usize> {
     let atoms = |bag: &PlanningContext| bag.atoms.iter().map(|(atom, _)| atom).collect::<Vec<_>>();
-    bags.iter()
-        .position(|bag| atoms(bag) == atoms(&chain[0]))
-        .unwrap_or(bags.len() - 1)
+    topologically_sort_bags(bags.to_vec())
+        .iter()
+        .filter_map(|node| bags.iter().position(|bag| atoms(bag) == atoms(node)))
+        .collect()
 }
 
 /// Plans the bags as reduced materializations (see [`plan_rooted`]), once for
@@ -1189,7 +1190,8 @@ fn plan_reduced(
     actions: ActionId,
     by_focus: bool,
 ) -> Plan {
-    let head = chain_head(&bags);
+    let starts = chain_order(&bags);
+    let head = starts.first().copied().unwrap_or(bags.len() - 1);
     let mut roots = Vec::new();
     let mut by_atom = DenseIdMap::new();
     for (atom_id, atom) in ctx.atoms.iter().filter(|_| by_focus) {
@@ -1207,10 +1209,10 @@ fn plan_reduced(
         });
         by_atom.insert(atom_id, program);
     }
-    let (stages, result_block) = plan_rooted(&bags, head, strat);
+    let (stages, result_block) = plan_rooted(&bags, head, &starts, strat);
     let programs = roots
         .iter()
-        .map(|root| plan_rooted(&bags, *root, strat))
+        .map(|root| plan_rooted(&bags, *root, &starts, strat))
         .collect();
     let header = plan_headers(&ctx).0;
     Plan::DecomposedPlan(DecomposedPlan {
@@ -1230,7 +1232,8 @@ fn plan_reduced(
 /// one sharing the most variables with a placed bag, and that bag drives it
 /// with the distinct projection of its materialization onto the shared
 /// variables. Only the root, and the first bag of any other connected
-/// component, runs undriven; no bag checks a materialization after the fact.
+/// component (the first of `starts` there), runs undriven; no bag checks a
+/// materialization after the fact.
 ///
 /// Each materialization is keyed on its bag's variables shared with earlier
 /// bags and keeps those that later bags or the actions need, so the result
@@ -1238,6 +1241,7 @@ fn plan_reduced(
 fn plan_rooted(
     bags: &[PlanningContext],
     root: usize,
+    starts: &[usize],
     strat: PlanStrategy,
 ) -> (JoinStageBlocks, JoinStages) {
     let n = bags.len();
@@ -1255,8 +1259,10 @@ fn plan_rooted(
             .filter(|(shared, ..)| *shared > 0)
             .max_by_key(|(shared, b, pos)| (*shared, Reverse(*b), Reverse(*pos)))
             .map(|(_, b, pos)| (b, Some(pos)))
-            // Another component starts at its last bag, as the chain planner's roots do.
-            .or_else(|| (0..n).rev().find(|b| !placed[*b]).map(|b| (b, None)));
+            .or_else(|| {
+                let start = starts.iter().copied().find(|b| !placed[*b]);
+                start.or_else(|| (0..n).rev().find(|b| !placed[*b])).map(|b| (b, None))
+            });
     }
 
     let in_bags = |positions: &[(usize, Option<usize>)], var: Variable| {
