@@ -1270,7 +1270,14 @@ impl<'a, 'state, 'exec> JoinState<'a, 'state, 'exec> {
         }
         let mut order = InstrOrder::from_iter(0..stages.instrs.len());
         let mut leaf_scans: LeafScans = smallvec::smallvec![false; stages.instrs.len()];
-        sort_plan_by_size(&mut order, &mut leaf_scans, 0, &stages.instrs, binding_info);
+        sort_plan_by_size(
+            &mut order,
+            &mut leaf_scans,
+            0,
+            &stages.instrs,
+            atoms,
+            binding_info,
+        );
         let all_stages = prepared.all_stage_mask::<M>();
         debug_assert!(
             all_stages.is_some()
@@ -1440,7 +1447,14 @@ impl<'a, 'state, 'exec> JoinState<'a, 'state, 'exec> {
             // Re-evaluate the remaining suffix after observing the residuals
             // produced by earlier stages. Packed child families make the
             // resulting atom-local successor choice safe to cache again.
-            sort_plan_by_size(instr_order, leaf_scans, cur, &stages.instrs, binding_info);
+            sort_plan_by_size(
+                instr_order,
+                leaf_scans,
+                cur,
+                &stages.instrs,
+                atoms,
+                binding_info,
+            );
             cur_size = estimate_size(&stages.instrs[instr_order.get(cur)], binding_info);
         }
 

@@ -14,17 +14,18 @@ use smallvec::SmallVec;
 
 use crate::{
     common::{IndexMap, Value},
-    numeric_id::{DenseIdMap, IdVec, NumericId},
+    numeric_id::{DenseIdMap, IdVec},
     offsets::Subset,
+    query::Atom,
     row_buffer::{RowBuffer, SmallValueVec, TaggedRowBuffer},
 };
 
 use super::{
-    ActionId, AtomId, ColumnId, ColumnIds, Variable,
+    ActionId, AtomId, ColumnId, Variable,
     frame_update::FrameUpdates,
     packed_cache::OwnedAtomRows,
     packed_trie::ChildShape,
-    plan::{JoinStage, MatId, MatScanMode},
+    plan::{JoinStage, MatId, MatScanMode, ScanSpec},
     prepared_index::{AccessId, PreparedIndexSlot, PreparedJoinIndexes, StageMask},
     probe::{AtomRows, Prober},
     with_pool_set,
@@ -438,16 +439,17 @@ pub(super) fn sort_plan_by_size(
     leaf_scans: &mut LeafScans,
     start: usize,
     instrs: &[JoinStage],
+    atoms: &DenseIdMap<AtomId, Atom>,
     binding_info: &mut BindingInfo<'_, '_>,
 ) {
     let mut last_pos = start;
     for i in start..instrs.len() {
         if is_reorder_barrier(&instrs[i]) {
-            sort_plan_by_size_inner(order, last_pos..i, instrs, binding_info);
+            sort_plan_by_size_inner(order, last_pos..i, instrs, atoms, binding_info);
             last_pos = i + 1;
         }
     }
-    sort_plan_by_size_inner(order, last_pos..instrs.len(), instrs, binding_info);
+    sort_plan_by_size_inner(order, last_pos..instrs.len(), instrs, atoms, binding_info);
     recompute_leaf_scans(order, leaf_scans, instrs, start);
 }
 
@@ -562,6 +564,7 @@ pub(super) fn sort_plan_by_size_inner(
     order: &mut InstrOrder,
     range: Range<usize>,
     instrs: &[JoinStage],
+    atoms: &DenseIdMap<AtomId, Atom>,
     binding_info: &mut BindingInfo<'_, '_>,
 ) {
     // Nothing to sort if there's 0 or 1 element.
@@ -628,14 +631,18 @@ pub(super) fn sort_plan_by_size_inner(
                 binders.get_or_insert(var, || me);
             });
             let stale = |var: Variable| binders.get(var).is_some_and(|s| *s != me);
-            // Columns of `spec` keyed on a stale variable, given `stale` by the
-            // stage's `bind` position and `cols` indexing `bind` through `pos`.
-            let n_stale =
-                |cols: &ColumnIds, stale: &[bool], pos: &dyn Fn(ColumnId) -> Option<usize>| {
-                    cols.iter()
-                        .filter(|col| pos(**col).is_some_and(|p| stale[p]))
-                        .count() as i64
-                };
+            // The columns of `spec` that a variable not yet bound keys. An atom
+            // holding a variable in several columns keys it once per column,
+            // as the count without stale variables does, so a stale variable
+            // removes each of those columns.
+            let fresh = |spec: &ScanSpec| {
+                let atom = &atoms[spec.to_index.atom];
+                spec.to_index
+                    .vars
+                    .iter()
+                    .filter(|col| !atom.get_var(**col).is_some_and(stale))
+                    .count() as i64
+            };
             match stage {
                 JoinStage::Intersect { var, scans } => {
                     if !stale(*var) {
@@ -646,29 +653,17 @@ pub(super) fn sort_plan_by_size_inner(
                 }
                 JoinStage::FusedIntersect {
                     cover,
-                    bind,
                     to_intersect,
+                    ..
                 } => {
-                    let stale: SmallVec<[bool; 4]> =
-                        bind.iter().map(|(_, var)| stale(*var)).collect();
-                    let pos = |col: ColumnId| Some(col.index()).filter(|p| *p < stale.len());
-                    *refinements.get_or_default(cover.to_index.atom) += cover.to_index.vars.len()
-                        as i64
-                        - stale.iter().filter(|s| **s).count() as i64;
-                    to_intersect.iter().for_each(|(spec, cols)| {
-                        *refinements.get_or_default(spec.to_index.atom) +=
-                            spec.to_index.vars.len() as i64 - n_stale(cols, &stale, &pos);
+                    *refinements.get_or_default(cover.to_index.atom) += fresh(cover);
+                    to_intersect.iter().for_each(|(spec, _)| {
+                        *refinements.get_or_default(spec.to_index.atom) += fresh(spec);
                     });
                 }
-                JoinStage::FusedIntersectMat {
-                    bind, to_intersect, ..
-                } => {
-                    let stale: SmallVec<[bool; 4]> =
-                        bind.iter().map(|(_, var)| stale(*var)).collect();
-                    let pos = |col: ColumnId| bind.iter().position(|(c, _)| *c == col);
-                    to_intersect.iter().for_each(|(spec, cols)| {
-                        *refinements.get_or_default(spec.to_index.atom) +=
-                            spec.to_index.vars.len() as i64 - n_stale(cols, &stale, &pos);
+                JoinStage::FusedIntersectMat { to_intersect, .. } => {
+                    to_intersect.iter().for_each(|(spec, _)| {
+                        *refinements.get_or_default(spec.to_index.atom) += fresh(spec);
                     });
                 }
             }
