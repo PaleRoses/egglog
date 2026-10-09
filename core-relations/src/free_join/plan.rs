@@ -364,14 +364,16 @@ pub(crate) struct MatSpec {
     pub val_vars: SmallVec<[Variable; 16]>,
 }
 
-/// The distinct projection of materialization `source` onto `cols`, stored as
-/// materialization `target`. Column `i` of the source is its `i`th key value,
-/// followed by its row values in order.
+/// The distinct projection of materialization `source` onto `key` and `vals`,
+/// stored as materialization `target`, keyed on `key` with one row per
+/// distinct `vals`. Column `i` of the source is its `i`th key value, followed
+/// by its row values in order.
 #[derive(Debug, Clone)]
 pub(crate) struct MatProjection {
     pub source: MatId,
     pub target: MatId,
-    pub cols: SmallVec<[ColumnId; 4]>,
+    pub key: SmallVec<[ColumnId; 4]>,
+    pub vals: SmallVec<[ColumnId; 4]>,
 }
 
 #[derive(Debug, Clone)]
@@ -379,7 +381,7 @@ pub(crate) struct JoinStageBlocks {
     // each block is a list of instructions and how to yield
     pub blocks: Vec<(JoinStages, MatSpec)>,
     /// Run after their source block is materialized; each one drives a later
-    /// bag through a `KeyOnly` prologue. Empty for chain plans.
+    /// bag. Empty for chain plans that check every message after the fact.
     pub projections: Vec<MatProjection>,
 }
 
@@ -971,16 +973,16 @@ fn count_variable_usage_per_bag(bags: &[PlanningContext]) -> DenseIdMap<Variable
     n_used_in_bag
 }
 
-/// A prologue that enumerates the keys of materialization `cover`, binding
-/// `key_vars` in order, and intersects every atom of `bag` on them.
-fn key_only_prologue(bag: &PlanningContext, cover: MatId, key_vars: &[Variable]) -> JoinStage {
-    let bind = key_vars
+/// A stage that scans materialization `cover` in `mode`, binding `vars` from
+/// its columns in order, and intersects every atom of `bag` on them.
+fn mat_stage(bag: &PlanningContext, cover: MatId, mode: MatScanMode, vars: &[Variable]) -> JoinStage {
+    let bind = vars
         .iter()
         .enumerate()
         .map(|(j, var)| (ColumnId::from_usize(j), *var))
         .collect();
     let mut to_intersect: Vec<(ScanSpec, ColumnIds)> = vec![];
-    for (col, var) in key_vars.iter().enumerate() {
+    for (col, var) in vars.iter().enumerate() {
         let vinfo = &bag.vars[*var];
         for occ in vinfo.occurrences.iter() {
             let isect = match to_intersect
@@ -1010,9 +1012,55 @@ fn key_only_prologue(bag: &PlanningContext, cover: MatId, key_vars: &[Variable])
     }
     JoinStage::FusedIntersectMat {
         cover,
-        mode: MatScanMode::KeyOnly,
+        mode,
         bind,
         to_intersect,
+    }
+}
+
+/// Where the chain planner's messages drive a bag rather than filter it.
+pub(crate) struct Drive<'p> {
+    /// Materializations from here up are projections.
+    first_projection: usize,
+    projections: &'p mut Vec<MatProjection>,
+}
+
+impl Drive<'_> {
+    /// A stage that binds the variables of message `msg` (the key of
+    /// materialization `source`) that are still free in `stripped_bag`, from
+    /// the message's distinct values keyed on those already bound.
+    ///
+    /// `None` when one atom of the bag holds every free variable: the bag then
+    /// binds them all at that atom, and a lookup right after it filters no
+    /// more than the atom's rows. Otherwise the bag can only bind them through
+    /// a join of several atoms, which a lookup would check row by row.
+    fn stage(
+        &mut self,
+        bag: &PlanningContext,
+        stripped_bag: &PlanningContext,
+        source: MatId,
+        msg: &[Variable],
+    ) -> Option<JoinStage> {
+        let col = |var: &Variable| ColumnId::from_usize(msg.iter().position(|v| v == var).unwrap());
+        let (free, bound): (SmallVec<[Variable; 4]>, SmallVec<[Variable; 4]>) =
+            msg.iter().copied().partition(|var| stripped_bag.vars.contains_key(*var));
+        let holds_all = |atom: &Atom| free.iter().all(|var| atom.vars().any(|v| v == *var));
+        if bag.atoms.iter().any(|(_, atom)| holds_all(atom)) {
+            return None;
+        }
+        let target = MatId::from_usize(self.first_projection + self.projections.len());
+        self.projections.push(MatProjection {
+            source,
+            target,
+            key: bound.iter().map(col).collect(),
+            vals: free.iter().map(col).collect(),
+        });
+        let mode = if bound.is_empty() {
+            MatScanMode::Full
+        } else {
+            MatScanMode::Value(bound.iter().copied().collect())
+        };
+        Some(mat_stage(bag, target, mode, &free))
     }
 }
 
@@ -1031,6 +1079,9 @@ fn plan_single_bag(
     // If this bag has been used to prune its parent
     has_block_contributed: &mut [bool],
     n_used_in_bag: &mut DenseIdMap<Variable, usize>,
+    // With these, a message the prologue does not cover drives the bag right
+    // after the prologue instead of filtering it at the end (see `drive`).
+    mut drive: Option<Drive<'_>>,
     strat: PlanStrategy,
 ) -> (Vec<JoinHeader>, JoinStages, MatSpec) {
     let mut msg_vars = smallvec![];
@@ -1064,6 +1115,7 @@ fn plan_single_bag(
     // These are constraints from children blocks. If there's only one such block, it can be the header.
     // Otherwise, they have to be epilogue instructions doing filtering at the end, which is less efficient.
     let mut prologue = None;
+    let mut drives = Vec::new();
     let mut epilogue = Vec::new();
     for (i, prev_block) in blocks.iter().enumerate().rev() {
         if prev_block.1.msg_vars.is_empty() {
@@ -1078,14 +1130,20 @@ fn plan_single_bag(
         {
             has_block_contributed[i] = true;
             if prologue.is_none() {
-                prologue = Some(key_only_prologue(
+                prologue = Some(mat_stage(
                     bag,
                     MatId::from_usize(i),
+                    MatScanMode::KeyOnly,
                     &prev_block.1.msg_vars,
                 ));
                 stripped_bag
                     .vars
                     .retain(|var, _vinfo| !prev_block.1.msg_vars.contains(&var));
+            } else if let Some(stage) = drive.as_mut().and_then(|drive| {
+                drive.stage(bag, &stripped_bag, MatId::from_usize(i), &prev_block.1.msg_vars)
+            }) {
+                stripped_bag.vars.retain(|var, _vinfo| !prev_block.1.msg_vars.contains(&var));
+                drives.push(stage);
             } else {
                 epilogue.push(JoinStage::FusedIntersectMat {
                     cover: MatId::from_usize(i),
@@ -1098,7 +1156,7 @@ fn plan_single_bag(
     }
 
     let (header, mut instrs) = plan_stages(&stripped_bag, strat);
-    instrs.splice(0..0, prologue);
+    instrs.splice(0..0, prologue.into_iter().chain(drives));
     instrs.extend(epilogue);
 
     let stages = JoinStages::new(instrs);
@@ -1148,12 +1206,14 @@ fn build_result_block(blocks: &[(JoinStages, MatSpec)]) -> JoinStages {
 }
 
 /// How decomposed queries are planned, from `EGGLOG_DECOMP_REDUCE`: unset, as
-/// the chain built by [`topologically_sort_bags`]; `1`, by [`plan_reduced`]
+/// the chain built by [`topologically_sort_bags`]; `2`, as that chain with
+/// every message driving its bag (see [`Drive`]); `1`, by [`plan_reduced`]
 /// rooted at the focus atom's bag; `head`, by [`plan_reduced`] rooted at the
 /// chain's first bag for every variant.
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Reduce {
     Off,
+    Drive,
     Focus,
     Head,
 }
@@ -1162,6 +1222,7 @@ fn reduce_mode() -> Reduce {
     static REDUCE: OnceLock<Reduce> = OnceLock::new();
     *REDUCE.get_or_init(|| match std::env::var("EGGLOG_DECOMP_REDUCE").as_deref() {
         Ok("1") => Reduce::Focus,
+        Ok("2") => Reduce::Drive,
         Ok("head") => Reduce::Head,
         _ => Reduce::Off,
     })
@@ -1307,15 +1368,16 @@ fn plan_rooted(
             projections.push(MatProjection {
                 source: MatId::from_usize(d),
                 target,
-                cols: shared
+                key: shared
                     .iter()
                     .map(|var| {
                         let col = driver_cols.iter().position(|v| v == var);
                         ColumnId::from_usize(col.expect("later bags' variables are kept"))
                     })
                     .collect(),
+                vals: smallvec![],
             });
-            let prologue = key_only_prologue(&bag, target, &shared);
+            let prologue = mat_stage(&bag, target, MatScanMode::KeyOnly, &shared);
             bag.vars.retain(|var, _| !shared.contains(&var));
             prologue
         });
@@ -1467,9 +1529,9 @@ pub(crate) fn tree_decompose_and_plan(
         // Don't do Yannakakis if it's just one bag
         return fast_path!();
     }
-    match reduce_mode() {
-        Reduce::Off => {}
-        mode => return plan_reduced(ctx, bags, strat, actions, mode == Reduce::Focus),
+    let mode = reduce_mode();
+    if matches!(mode, Reduce::Focus | Reduce::Head) {
+        return plan_reduced(ctx, bags, strat, actions, mode == Reduce::Focus);
     }
 
     // Step 2: Sort bags topologically and merge leafy bags with their parents
@@ -1486,12 +1548,18 @@ pub(crate) fn tree_decompose_and_plan(
     // Step 4: Plan each bag and create materialization blocks
     let mut blocks = Vec::new();
     let mut header = vec![];
+    let mut projections = vec![];
+    let first_projection = bags.len();
     for bag in bags.iter_mut() {
         let (bag_header, stages, mat_spec) = plan_single_bag(
             bag,
             &blocks,
             &mut has_block_contributed,
             &mut n_used_in_bag,
+            (mode == Reduce::Drive).then_some(Drive {
+                first_projection,
+                projections: &mut projections,
+            }),
             strat,
         );
         blocks.push((stages, mat_spec));
@@ -1516,7 +1584,7 @@ pub(crate) fn tree_decompose_and_plan(
         header,
         stages: JoinStageBlocks {
             blocks,
-            projections: vec![],
+            projections,
         },
         result_block,
         actions,

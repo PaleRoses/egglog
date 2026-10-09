@@ -27,7 +27,7 @@ use web_time::Instant;
 use crate::{
     Constraint, OffsetRange, Pool, SubsetRef,
     action::{Bindings, ExecutionState, ExecutionStateSeed, ExternalContext},
-    common::{DashMap, HashMap, IndexMap, Value},
+    common::{DashMap, HashMap, HashSet, IndexMap, Value},
     numeric_id::{DenseIdMap, NumericId},
     offsets::{Offsets, RowId, SortedOffsetVector, Subset},
     parallel_heuristics::{
@@ -2867,41 +2867,57 @@ fn run_projections(
 ) {
     let key_len = blocks.blocks[source.index()].1.msg_vars.len();
     for projection in blocks.projections.iter().filter(|p| p.source == source) {
-        let projected =
-            project_materialization(&materializations[source], key_len, &projection.cols);
+        let projected = project_materialization(
+            &materializations[source],
+            key_len,
+            &projection.key,
+            &projection.vals,
+        );
         materializations.insert(projection.target, Arc::new(projected));
     }
 }
 
-/// The distinct values of `cols` over a materialization's rows, as a
-/// materialization that a `KeyOnly` prologue can enumerate. Column `i` is the
+/// The distinct values of `key` and `vals` over a materialization's rows,
+/// keyed on `key`, with one row per distinct `vals` (a placeholder row when
+/// there are none, so that a `KeyOnly` scan sees every key). Column `i` is the
 /// `i`th key value for `i < key_len`, and a row value after that.
 fn project_materialization(
     mat: &IndexMap<Vec<Value>, RowBuffer>,
     key_len: usize,
-    cols: &[ColumnId],
+    key: &[ColumnId],
+    vals: &[ColumnId],
 ) -> IndexMap<Vec<Value>, RowBuffer> {
-    let mut projected = IndexMap::default();
-    let mut scratch = Vec::with_capacity(cols.len());
+    let mut projected = IndexMap::<Vec<Value>, RowBuffer>::default();
+    let mut seen = HashSet::<Vec<Value>>::default();
+    let mut scratch = Vec::with_capacity(key.len() + vals.len());
     let mut add = |scratch: &Vec<Value>| {
-        if !projected.contains_key(scratch) {
-            let mut placeholder = RowBuffer::new(1);
-            placeholder.add_row(&[Value::stale()]);
-            projected.insert(scratch.clone(), placeholder);
+        if seen.contains(scratch) {
+            return;
+        }
+        seen.insert(scratch.clone());
+        let (k, v) = scratch.split_at(key.len());
+        let rows = projected
+            .entry(k.to_vec())
+            .or_insert_with(|| RowBuffer::new(v.len().max(1)));
+        if v.is_empty() {
+            rows.add_row(&[Value::stale()]);
+        } else {
+            rows.add_row(v);
         }
     };
-    if cols.iter().all(|col| col.index() < key_len) {
-        for key in mat.keys() {
+    let cols = || key.iter().chain(vals.iter());
+    if cols().all(|col| col.index() < key_len) {
+        for mat_key in mat.keys() {
             scratch.clear();
-            scratch.extend(cols.iter().map(|col| key[col.index()]));
+            scratch.extend(cols().map(|col| mat_key[col.index()]));
             add(&scratch);
         }
     } else {
-        for (key, rows) in mat.iter() {
+        for (mat_key, rows) in mat.iter() {
             for row in rows.iter() {
                 scratch.clear();
-                scratch.extend(cols.iter().map(|col| match col.index().checked_sub(key_len) {
-                    None => key[col.index()],
+                scratch.extend(cols().map(|col| match col.index().checked_sub(key_len) {
+                    None => mat_key[col.index()],
                     Some(i) => row[i],
                 }));
                 add(&scratch);
