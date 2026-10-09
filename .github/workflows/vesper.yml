@@ -13,6 +13,10 @@ on:
         description: baseline SHA for bench.py (empty skips the benchmark)
         required: false
         default: ""
+      reduce_mode:
+        description: EGGLOG_DECOMP_REDUCE for the benchmark runs (empty = default planner)
+        required: false
+        default: ""
   push:
     branches: [vesper-ci]
 
@@ -61,6 +65,8 @@ jobs:
       - name: Load before the run
         run: cat /proc/loadavg; cat /sys/class/power_supply/A*/online
       - name: bench.py baseline vs ref
+        env:
+          EGGLOG_DECOMP_REDUCE: ${{ inputs.reduce_mode }}
         run: python3 scripts/bench.py run ${{ inputs.baseline }} $(git rev-parse HEAD)
       - name: Report
         run: python3 scripts/bench.py diff
