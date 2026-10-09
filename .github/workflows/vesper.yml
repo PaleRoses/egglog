@@ -63,22 +63,30 @@ jobs:
           ref: ${{ inputs.ref }}
           fetch-depth: 0
       - name: Wait for a quiet machine
-        # The other runners on this laptop yield CPU weight but still share it;
-        # a benchmark starts only once the one-minute load is under 1.5, or
-        # after 20 minutes, and says which.
+        # The other runners on this laptop yield CPU weight but still share it.
+        # A benchmark starts only once the one-minute load is under 1.5; if the
+        # machine is never quiet within 40 minutes the job fails rather than
+        # print a contaminated table as a result.
         run: |
-          for i in $(seq 1 120); do
+          for i in $(seq 1 240); do
             load=$(cut -d' ' -f1 /proc/loadavg)
             awk -v l="$load" 'BEGIN { exit !(l < 1.5) }' && { echo "quiet after $((i*10)) s, load $load"; exit 0; }
             sleep 10
           done
-          echo "NOT quiet after 20 min, load $(cut -d' ' -f1 /proc/loadavg); running anyway"
+          echo "NOT quiet after 40 min, load $(cut -d' ' -f1 /proc/loadavg); refusing to benchmark"
+          exit 1
       - name: Load and power before the run
         run: cat /proc/loadavg; cat /sys/class/power_supply/A*/online
       - name: bench.py baseline vs ref
         env:
           EGGLOG_DECOMP_REDUCE: ${{ inputs.reduce_mode }}
-        run: python3 scripts/bench.py run ${{ inputs.baseline }} $(git rev-parse HEAD)
+        run: python3 scripts/bench.py run ${{ inputs.baseline }} $(git rev-parse HEAD) | tee bench-run.log
+      - name: No row may be noisy
+        # A quiet run holds every stddev under 4% of its mean; a sibling runner
+        # waking mid-run pushes rows past 25%. Such a table is not a result.
+        run: |
+          noisy=$(awk '/\.egg +[0-9.]+ +± +[0-9.]+/ && $4 / $2 > 0.10' bench-run.log)
+          [ -z "$noisy" ] || { echo "noisy rows:"; echo "$noisy"; exit 1; }
       - name: Report
         run: python3 scripts/bench.py diff
       - name: Every benchmark must have run
