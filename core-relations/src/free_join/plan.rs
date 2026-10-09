@@ -1147,32 +1147,58 @@ fn build_result_block(blocks: &[(JoinStages, MatSpec)]) -> JoinStages {
     JoinStages::new(result_block)
 }
 
-/// Whether decomposed queries use [`plan_reduced`] (`EGGLOG_DECOMP_REDUCE=1`)
-/// instead of the chain built by [`topologically_sort_bags`].
-fn reduce_enabled() -> bool {
-    static REDUCE: OnceLock<bool> = OnceLock::new();
-    *REDUCE.get_or_init(|| std::env::var_os("EGGLOG_DECOMP_REDUCE").is_some_and(|v| v == "1"))
+/// How decomposed queries are planned, from `EGGLOG_DECOMP_REDUCE`: unset, as
+/// the chain built by [`topologically_sort_bags`]; `1`, by [`plan_reduced`]
+/// rooted at the focus atom's bag; `head`, by [`plan_reduced`] rooted at the
+/// chain's first bag for every variant.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Reduce {
+    Off,
+    Focus,
+    Head,
+}
+
+fn reduce_mode() -> Reduce {
+    static REDUCE: OnceLock<Reduce> = OnceLock::new();
+    *REDUCE.get_or_init(|| match std::env::var("EGGLOG_DECOMP_REDUCE").as_deref() {
+        Ok("1") => Reduce::Focus,
+        Ok("head") => Reduce::Head,
+        _ => Reduce::Off,
+    })
+}
+
+/// The bag the chain planner runs first, undriven: the last node of the chain
+/// [`topologically_sort_bags`] builds, which has no children and so is one of
+/// `bags` unmerged.
+fn chain_head(bags: &[PlanningContext]) -> usize {
+    let chain = topologically_sort_bags(bags.to_vec());
+    let atoms = |bag: &PlanningContext| bag.atoms.iter().map(|(atom, _)| atom).collect::<Vec<_>>();
+    bags.iter()
+        .position(|bag| atoms(bag) == atoms(&chain[0]))
+        .unwrap_or(bags.len() - 1)
 }
 
 /// Plans the bags as reduced materializations (see [`plan_rooted`]), once for
-/// every root a seminaive variant can ask for: the planner's root, the last
-/// bag, for variants whose focus is unrestricted, and otherwise the first bag
-/// holding all of the focus atom's variables.
+/// every root a seminaive variant can ask for: the bag the chain planner runs
+/// first, for variants whose focus is unrestricted, and with `by_focus` the
+/// first bag holding all of the focus atom's variables otherwise.
 fn plan_reduced(
     ctx: PlanningContext,
     bags: Vec<PlanningContext>,
     strat: PlanStrategy,
     actions: ActionId,
+    by_focus: bool,
 ) -> Plan {
-    let planner_root = bags.len() - 1;
+    let head = chain_head(&bags);
     let mut roots = Vec::new();
     let mut by_atom = DenseIdMap::new();
-    for (atom_id, atom) in ctx.atoms.iter() {
-        let holder = bags
-            .iter()
-            .position(|bag| bag.has_vars(atom.vars()))
-            .unwrap_or(planner_root);
-        if holder == planner_root {
+    for (atom_id, atom) in ctx.atoms.iter().filter(|_| by_focus) {
+        let holds = |bag: &usize| bags[*bag].has_vars(atom.vars());
+        let holder = Some(head)
+            .filter(holds)
+            .or_else(|| (0..bags.len()).find(holds))
+            .unwrap_or(head);
+        if holder == head {
             continue;
         }
         let program = roots.iter().position(|root| *root == holder).unwrap_or_else(|| {
@@ -1181,7 +1207,7 @@ fn plan_reduced(
         });
         by_atom.insert(atom_id, program);
     }
-    let (stages, result_block) = plan_rooted(&bags, planner_root, strat);
+    let (stages, result_block) = plan_rooted(&bags, head, strat);
     let programs = roots
         .iter()
         .map(|root| plan_rooted(&bags, *root, strat))
@@ -1435,8 +1461,9 @@ pub(crate) fn tree_decompose_and_plan(
         // Don't do Yannakakis if it's just one bag
         return fast_path!();
     }
-    if reduce_enabled() {
-        return plan_reduced(ctx, bags, strat, actions);
+    match reduce_mode() {
+        Reduce::Off => {}
+        mode => return plan_reduced(ctx, bags, strat, actions, mode == Reduce::Focus),
     }
 
     // Step 2: Sort bags topologically and merge leafy bags with their parents
