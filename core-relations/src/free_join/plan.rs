@@ -1023,44 +1023,55 @@ pub(crate) struct Drive<'p> {
     /// Materializations from here up are projections.
     first_projection: usize,
     projections: &'p mut Vec<MatProjection>,
+    /// Whether every such message drives its bag as a relation that dynamic
+    /// variable ordering places (see [`Drive::stage`]).
+    relation: bool,
 }
 
 impl Drive<'_> {
     /// A stage that binds the variables of message `msg` (the key of
-    /// materialization `source`) that are still free in `stripped_bag`, from
-    /// the message's distinct values keyed on those already bound.
+    /// materialization `source`) that are still free in `stripped_bag`, and
+    /// whether the message must still be looked up once the bag is bound.
     ///
-    /// `None` when one atom of the bag holds every free variable: the bag then
-    /// binds them all at that atom, and a lookup right after it filters no
-    /// more than the atom's rows. Otherwise the bag can only bind them through
-    /// a join of several atoms, which a lookup would check row by row.
+    /// As a relation, the stage scans the distinct values of the free
+    /// variables, a `KeyOnly` scan that dynamic variable ordering moves like
+    /// any other stage by its size, and the lookup checks them against the
+    /// bound ones. Otherwise the stage scans the message's distinct values
+    /// keyed on the bound variables right after the prologue, and only when
+    /// no one atom of the bag holds every free variable: the bag then binds
+    /// them all at that atom, and a lookup right after it filters no more
+    /// than the atom's rows, where else the bag can only bind them through a
+    /// join of several atoms, which a lookup would check row by row.
     fn stage(
         &mut self,
         bag: &PlanningContext,
         stripped_bag: &PlanningContext,
         source: MatId,
         msg: &[Variable],
-    ) -> Option<JoinStage> {
+    ) -> Option<(JoinStage, bool)> {
         let col = |var: &Variable| ColumnId::from_usize(msg.iter().position(|v| v == var).unwrap());
         let (free, bound): (SmallVec<[Variable; 4]>, SmallVec<[Variable; 4]>) =
             msg.iter().copied().partition(|var| stripped_bag.vars.contains_key(*var));
         let holds_all = |atom: &Atom| free.iter().all(|var| atom.vars().any(|v| v == *var));
-        if bag.atoms.iter().any(|(_, atom)| holds_all(atom)) {
+        if free.is_empty() || (!self.relation && bag.atoms.iter().any(|(_, atom)| holds_all(atom))) {
             return None;
         }
         let target = MatId::from_usize(self.first_projection + self.projections.len());
+        let (key, vals) = if self.relation { (&free, &bound[..0]) } else { (&bound, &free[..]) };
         self.projections.push(MatProjection {
             source,
             target,
-            key: bound.iter().map(col).collect(),
-            vals: free.iter().map(col).collect(),
+            key: key.iter().map(col).collect(),
+            vals: vals.iter().map(col).collect(),
         });
-        let mode = if bound.is_empty() {
+        let mode = if self.relation {
+            MatScanMode::KeyOnly
+        } else if bound.is_empty() {
             MatScanMode::Full
         } else {
             MatScanMode::Value(bound.iter().copied().collect())
         };
-        Some(mat_stage(bag, target, mode, &free))
+        Some((mat_stage(bag, target, mode, &free), self.relation && !bound.is_empty()))
     }
 }
 
@@ -1139,18 +1150,23 @@ fn plan_single_bag(
                 stripped_bag
                     .vars
                     .retain(|var, _vinfo| !prev_block.1.msg_vars.contains(&var));
-            } else if let Some(stage) = drive.as_mut().and_then(|drive| {
-                drive.stage(bag, &stripped_bag, MatId::from_usize(i), &prev_block.1.msg_vars)
-            }) {
-                stripped_bag.vars.retain(|var, _vinfo| !prev_block.1.msg_vars.contains(&var));
-                drives.push(stage);
             } else {
-                epilogue.push(JoinStage::FusedIntersectMat {
-                    cover: MatId::from_usize(i),
-                    mode: MatScanMode::Lookup(prev_block.1.msg_vars.clone()),
-                    bind: smallvec![],
-                    to_intersect: vec![],
+                let drove = drive.as_mut().and_then(|drive| {
+                    drive.stage(bag, &stripped_bag, MatId::from_usize(i), &prev_block.1.msg_vars)
                 });
+                let check = drove.as_ref().is_none_or(|(_, check)| *check);
+                if let Some((stage, _)) = drove {
+                    stripped_bag.vars.retain(|var, _vinfo| !prev_block.1.msg_vars.contains(&var));
+                    drives.push(stage);
+                }
+                if check {
+                    epilogue.push(JoinStage::FusedIntersectMat {
+                        cover: MatId::from_usize(i),
+                        mode: MatScanMode::Lookup(prev_block.1.msg_vars.clone()),
+                        bind: smallvec![],
+                        to_intersect: vec![],
+                    });
+                }
             }
         }
     }
@@ -1207,13 +1223,15 @@ fn build_result_block(blocks: &[(JoinStages, MatSpec)]) -> JoinStages {
 
 /// How decomposed queries are planned, from `EGGLOG_DECOMP_REDUCE`: unset, as
 /// the chain built by [`topologically_sort_bags`]; `2`, as that chain with
-/// every message driving its bag (see [`Drive`]); `1`, by [`plan_reduced`]
+/// messages driving their bag (see [`Drive`]), and `3` with every message a
+/// relation of its bag; `1`, by [`plan_reduced`]
 /// rooted at the focus atom's bag; `head`, by [`plan_reduced`] rooted at the
 /// chain's first bag for every variant.
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Reduce {
     Off,
     Drive,
+    Relation,
     Focus,
     Head,
 }
@@ -1223,6 +1241,7 @@ fn reduce_mode() -> Reduce {
     *REDUCE.get_or_init(|| match std::env::var("EGGLOG_DECOMP_REDUCE").as_deref() {
         Ok("1") => Reduce::Focus,
         Ok("2") => Reduce::Drive,
+        Ok("3") => Reduce::Relation,
         Ok("head") => Reduce::Head,
         _ => Reduce::Off,
     })
@@ -1556,9 +1575,10 @@ pub(crate) fn tree_decompose_and_plan(
             &blocks,
             &mut has_block_contributed,
             &mut n_used_in_bag,
-            (mode == Reduce::Drive).then_some(Drive {
+            matches!(mode, Reduce::Drive | Reduce::Relation).then_some(Drive {
                 first_projection,
                 projections: &mut projections,
+                relation: mode == Reduce::Relation,
             }),
             strat,
         );
