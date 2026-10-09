@@ -570,102 +570,129 @@ pub(super) fn sort_plan_by_size_inner(
     }
     // How many times an atom has been intersected/joined
     let mut times_refined = with_pool_set(|ps| ps.get::<DenseIdMap<AtomId, i64>>());
-    // A refinement counts a binding that restricts an atom's subset: a column
-    // whose variable another stage counted earlier already bound restricts
-    // nothing, and adds nothing. `binders[v]` is one more than the index of
-    // the stage that first bound variable `v` in the counted sequence (0 while
-    // unbound). A stage counted twice (in the logical prefix and again when
-    // placed) still counts as before; only a second stage binding the same
-    // variable, which a `Relation` stage and the atoms that share its
-    // variables can be, is affected.
-    let mut binders: SmallVec<[u16; 64]> = SmallVec::new();
-    let update_refinements = |stage_index: usize,
-                              refinements: &mut DenseIdMap<AtomId, i64>,
-                              binders: &mut SmallVec<[u16; 64]>| {
-        let me = u16::try_from(stage_index + 1).expect("too many instructions");
-        let mut stale = |var: Variable| {
-            if binders.len() <= var.index() {
-                binders.resize(var.index() + 1, 0);
-            }
-            let binder = &mut binders[var.index()];
-            if *binder == 0 {
-                *binder = me;
-            }
-            *binder != me
-        };
-        // Columns of `spec` keyed on a stale variable, given `stale` by the
-        // stage's `bind` position and `cols` indexing `bind` through `pos`.
-        let n_stale =
-            |cols: &ColumnIds, stale: &[bool], pos: &dyn Fn(ColumnId) -> Option<usize>| {
-                cols.iter()
-                    .filter(|col| pos(**col).is_some_and(|p| stale[p]))
-                    .count() as i64
-            };
-        match &instrs[stage_index] {
-            JoinStage::Intersect { var, scans } => {
-                if !stale(*var) {
-                    scans.iter().for_each(|scan| {
-                        *refinements.get_or_default(scan.atom) += 1;
-                    })
-                }
-            }
-            JoinStage::FusedIntersect {
-                cover,
-                bind,
-                to_intersect,
-            } => {
-                let stale: SmallVec<[bool; 4]> = bind.iter().map(|(_, var)| stale(*var)).collect();
-                let pos = |col: ColumnId| Some(col.index()).filter(|p| *p < stale.len());
-                *refinements.get_or_default(cover.to_index.atom) +=
-                    cover.to_index.vars.len() as i64 - stale.iter().filter(|s| **s).count() as i64;
-                to_intersect.iter().for_each(|(spec, cols)| {
-                    *refinements.get_or_default(spec.to_index.atom) +=
-                        spec.to_index.vars.len() as i64 - n_stale(cols, &stale, &pos);
-                });
-            }
-            JoinStage::FusedIntersectMat {
-                bind, to_intersect, ..
-            } => {
-                let stale: SmallVec<[bool; 4]> = bind.iter().map(|(_, var)| stale(*var)).collect();
-                let pos = |col: ColumnId| bind.iter().position(|(c, _)| *c == col);
-                to_intersect.iter().for_each(|(spec, cols)| {
-                    *refinements.get_or_default(spec.to_index.atom) +=
-                        spec.to_index.vars.len() as i64 - n_stale(cols, &stale, &pos);
-                });
-            }
-        }
-    };
-
-    // Count how many times each atom has been refined in the logical plan
-    // prefix, as the DVO heuristic does.
-    for stage_index in 0..range.start {
-        update_refinements(stage_index, &mut times_refined, &mut binders);
-    }
-
-    // The variables bound by the physical prefix and by each stage placed
-    // since, which a `Relation` stage is keyed on. Only tracked when one is
-    // in the range.
-    let has_relation = range.clone().any(|i| {
+    // Only a plan with a `Relation` stage binds a variable in two stages or
+    // keys a stage on the variables bound so far; any other plan skips the
+    // bookkeeping for both.
+    let relations = instrs.iter().any(|stage| {
         matches!(
-            &instrs[order.get(i)],
+            stage,
             JoinStage::FusedIntersectMat {
                 mode: MatScanMode::Relation,
                 ..
             }
         )
     });
-    let mut bound: SmallVec<[Variable; 32]> = SmallVec::new();
-    let mark_bound = |stage: &JoinStage, bound: &mut SmallVec<[Variable; 32]>| {
-        if has_relation {
-            for_each_bound_var(stage, |var| {
-                if !bound.contains(&var) {
-                    bound.push(var);
+    // A refinement counts a binding that restricts an atom's subset: a column
+    // whose variable another stage counted earlier already bound restricts
+    // nothing, and adds nothing. `binders` maps each variable to the stage
+    // that first bound it in the counted sequence; a variable it lacks is
+    // unbound. A stage counted twice (in the logical prefix and again when
+    // placed) still counts as before; only a second stage binding the same
+    // variable, which a `Relation` stage and the atoms that share its
+    // variables can be, is affected.
+    let mut binders = relations.then(|| with_pool_set(|ps| ps.get::<DenseIdMap<Variable, u16>>()));
+    let update_refinements =
+        |stage_index: usize,
+         refinements: &mut DenseIdMap<AtomId, i64>,
+         binders: Option<&mut DenseIdMap<Variable, u16>>| {
+            let stage = &instrs[stage_index];
+            let Some(binders) = binders else {
+                // No variable is bound twice: every column counts.
+                match stage {
+                    JoinStage::Intersect { scans, .. } => scans.iter().for_each(|scan| {
+                        *refinements.get_or_default(scan.atom) += 1;
+                    }),
+                    JoinStage::FusedIntersect {
+                        cover,
+                        to_intersect,
+                        ..
+                    } => {
+                        *refinements.get_or_default(cover.to_index.atom) +=
+                            cover.to_index.vars.len() as i64;
+                        to_intersect.iter().for_each(|(spec, _)| {
+                            *refinements.get_or_default(spec.to_index.atom) +=
+                                spec.to_index.vars.len() as i64;
+                        });
+                    }
+                    JoinStage::FusedIntersectMat { to_intersect, .. } => {
+                        to_intersect.iter().for_each(|(spec, _)| {
+                            *refinements.get_or_default(spec.to_index.atom) +=
+                                spec.to_index.vars.len() as i64;
+                        });
+                    }
                 }
+                return;
+            };
+            let me = u16::try_from(stage_index).expect("too many instructions");
+            for_each_bound_var(stage, |var| {
+                binders.get_or_insert(var, || me);
+            });
+            let stale = |var: Variable| binders.get(var).is_some_and(|s| *s != me);
+            // Columns of `spec` keyed on a stale variable, given `stale` by the
+            // stage's `bind` position and `cols` indexing `bind` through `pos`.
+            let n_stale =
+                |cols: &ColumnIds, stale: &[bool], pos: &dyn Fn(ColumnId) -> Option<usize>| {
+                    cols.iter()
+                        .filter(|col| pos(**col).is_some_and(|p| stale[p]))
+                        .count() as i64
+                };
+            match stage {
+                JoinStage::Intersect { var, scans } => {
+                    if !stale(*var) {
+                        scans.iter().for_each(|scan| {
+                            *refinements.get_or_default(scan.atom) += 1;
+                        })
+                    }
+                }
+                JoinStage::FusedIntersect {
+                    cover,
+                    bind,
+                    to_intersect,
+                } => {
+                    let stale: SmallVec<[bool; 4]> =
+                        bind.iter().map(|(_, var)| stale(*var)).collect();
+                    let pos = |col: ColumnId| Some(col.index()).filter(|p| *p < stale.len());
+                    *refinements.get_or_default(cover.to_index.atom) += cover.to_index.vars.len()
+                        as i64
+                        - stale.iter().filter(|s| **s).count() as i64;
+                    to_intersect.iter().for_each(|(spec, cols)| {
+                        *refinements.get_or_default(spec.to_index.atom) +=
+                            spec.to_index.vars.len() as i64 - n_stale(cols, &stale, &pos);
+                    });
+                }
+                JoinStage::FusedIntersectMat {
+                    bind, to_intersect, ..
+                } => {
+                    let stale: SmallVec<[bool; 4]> =
+                        bind.iter().map(|(_, var)| stale(*var)).collect();
+                    let pos = |col: ColumnId| bind.iter().position(|(c, _)| *c == col);
+                    to_intersect.iter().for_each(|(spec, cols)| {
+                        *refinements.get_or_default(spec.to_index.atom) +=
+                            spec.to_index.vars.len() as i64 - n_stale(cols, &stale, &pos);
+                    });
+                }
+            }
+        };
+
+    // Count how many times each atom has been refined in the logical plan
+    // prefix, as the DVO heuristic does.
+    for stage_index in 0..range.start {
+        update_refinements(stage_index, &mut times_refined, binders.as_deref_mut());
+    }
+
+    // The variables bound by the physical prefix and by each stage placed
+    // since, which a `Relation` stage is keyed on.
+    let mut bound = relations.then(|| with_pool_set(|ps| ps.get::<DenseIdMap<Variable, u16>>()));
+    let mark_bound = |stage_index: usize, bound: Option<&mut DenseIdMap<Variable, u16>>| {
+        if let Some(bound) = bound {
+            let me = u16::try_from(stage_index).expect("too many instructions");
+            for_each_bound_var(&instrs[stage_index], |var| {
+                bound.get_or_insert(var, || me);
             });
         }
     };
     for position in 0..range.start {
-        mark_bound(&instrs[order.get(position)], &mut bound);
+        mark_bound(order.get(position), bound.as_deref_mut());
     }
 
     // We prioritize stages by
@@ -683,14 +710,17 @@ pub(super) fn sort_plan_by_size_inner(
     let key_fn = |join_stage: &JoinStage,
                   binding_info: &BindingInfo<'_, '_>,
                   refinements: &DenseIdMap<AtomId, i64>,
-                  bound: &SmallVec<[Variable; 32]>| {
+                  bound: Option<&DenseIdMap<Variable, u16>>| {
         if let JoinStage::FusedIntersectMat {
             mode: MatScanMode::Relation,
             bind,
             ..
         } = join_stage
         {
-            let refine = bind.iter().filter(|(_, var)| bound.contains(var)).count() as i64;
+            let refine = bind
+                .iter()
+                .filter(|(_, var)| bound.is_some_and(|bound| bound.contains_key(*var)))
+                .count() as i64;
             let size = if refine == bind.len() as i64 {
                 1
             } else {
@@ -718,17 +748,27 @@ pub(super) fn sort_plan_by_size_inner(
     };
 
     for i in range.clone() {
-        let mut key_i = key_fn(&instrs[order.get(i)], binding_info, &times_refined, &bound);
+        let mut key_i = key_fn(
+            &instrs[order.get(i)],
+            binding_info,
+            &times_refined,
+            bound.as_deref(),
+        );
         for j in (i + 1)..range.end {
-            let key_j = key_fn(&instrs[order.get(j)], binding_info, &times_refined, &bound);
+            let key_j = key_fn(
+                &instrs[order.get(j)],
+                binding_info,
+                &times_refined,
+                bound.as_deref(),
+            );
             if key_j < key_i {
                 order.data.swap(i, j);
                 key_i = key_j;
             }
         }
         // Update the counts after a new instruction is selected.
-        update_refinements(order.get(i), &mut times_refined, &mut binders);
-        mark_bound(&instrs[order.get(i)], &mut bound);
+        update_refinements(order.get(i), &mut times_refined, binders.as_deref_mut());
+        mark_bound(order.get(i), bound.as_deref_mut());
     }
 }
 
