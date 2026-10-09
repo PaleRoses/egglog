@@ -1026,6 +1026,9 @@ pub(crate) struct Drive<'p> {
     /// Whether every such message drives its bag as a relation that dynamic
     /// variable ordering places (see [`Drive::stage`]).
     relation: bool,
+    /// Whether messages only filter their bag, one variable at a time (see
+    /// [`Drive::filters`]), instead of driving it.
+    filter: bool,
 }
 
 impl Drive<'_> {
@@ -1072,6 +1075,49 @@ impl Drive<'_> {
             MatScanMode::Value(bound.iter().copied().collect())
         };
         Some((mat_stage(bag, target, mode, &free), self.relation && !bound.is_empty()))
+    }
+
+    /// Lookups that check each variable of message `msg` (the key of
+    /// materialization `source`) the bag binds, together with those the
+    /// prologue binds, against the message's distinct values, as soon as the
+    /// bag binds it ([`loop_lifting`] places them). Empty unless the bag binds
+    /// two or more: the lookup of the whole message waits for all of them,
+    /// and the bag joins the atoms that bind them unfiltered until then.
+    fn filters(
+        &mut self,
+        stripped_bag: &PlanningContext,
+        source: MatId,
+        msg: &[Variable],
+    ) -> Vec<JoinStage> {
+        let free = |var: &Variable| stripped_bag.vars.contains_key(*var);
+        if msg.iter().filter(|var| free(var)).count() < 2 {
+            return vec![];
+        }
+        msg.iter()
+            .filter(|var| free(var))
+            .map(|x| {
+                let key: SmallVec<[Variable; 16]> =
+                    msg.iter().copied().filter(|var| var == x || !free(var)).collect();
+                let target = MatId::from_usize(self.first_projection + self.projections.len());
+                self.projections.push(MatProjection {
+                    source,
+                    target,
+                    key: msg
+                        .iter()
+                        .enumerate()
+                        .filter(|(_, var)| key.contains(*var))
+                        .map(|(col, _)| ColumnId::from_usize(col))
+                        .collect(),
+                    vals: smallvec![],
+                });
+                JoinStage::FusedIntersectMat {
+                    cover: target,
+                    mode: MatScanMode::Lookup(key),
+                    bind: smallvec![],
+                    to_intersect: vec![],
+                }
+            })
+            .collect()
     }
 }
 
@@ -1151,7 +1197,7 @@ fn plan_single_bag(
                     .vars
                     .retain(|var, _vinfo| !prev_block.1.msg_vars.contains(&var));
             } else {
-                let drove = drive.as_mut().and_then(|drive| {
+                let drove = drive.as_mut().filter(|drive| !drive.filter).and_then(|drive| {
                     drive.stage(bag, &stripped_bag, MatId::from_usize(i), &prev_block.1.msg_vars)
                 });
                 let check = drove.as_ref().is_none_or(|(_, check)| *check);
@@ -1160,6 +1206,13 @@ fn plan_single_bag(
                     drives.push(stage);
                 }
                 if check {
+                    if let Some(drive) = drive.as_mut().filter(|drive| drive.filter) {
+                        epilogue.extend(drive.filters(
+                            &stripped_bag,
+                            MatId::from_usize(i),
+                            &prev_block.1.msg_vars,
+                        ));
+                    }
                     epilogue.push(JoinStage::FusedIntersectMat {
                         cover: MatId::from_usize(i),
                         mode: MatScanMode::Lookup(prev_block.1.msg_vars.clone()),
@@ -1223,8 +1276,9 @@ fn build_result_block(blocks: &[(JoinStages, MatSpec)]) -> JoinStages {
 
 /// How decomposed queries are planned, from `EGGLOG_DECOMP_REDUCE`: unset, as
 /// the chain built by [`topologically_sort_bags`]; `2`, as that chain with
-/// messages driving their bag (see [`Drive`]), and `3` with every message a
-/// relation of its bag; `1`, by [`plan_reduced`]
+/// messages driving their bag (see [`Drive`]), `3` with every message a
+/// relation of its bag, and `4` with messages filtering their bag one
+/// variable at a time; `1`, by [`plan_reduced`]
 /// rooted at the focus atom's bag; `head`, by [`plan_reduced`] rooted at the
 /// chain's first bag for every variant.
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -1232,6 +1286,7 @@ enum Reduce {
     Off,
     Drive,
     Relation,
+    Filter,
     Focus,
     Head,
 }
@@ -1242,6 +1297,7 @@ fn reduce_mode() -> Reduce {
         Ok("1") => Reduce::Focus,
         Ok("2") => Reduce::Drive,
         Ok("3") => Reduce::Relation,
+        Ok("4") => Reduce::Filter,
         Ok("head") => Reduce::Head,
         _ => Reduce::Off,
     })
@@ -1575,10 +1631,11 @@ pub(crate) fn tree_decompose_and_plan(
             &blocks,
             &mut has_block_contributed,
             &mut n_used_in_bag,
-            matches!(mode, Reduce::Drive | Reduce::Relation).then_some(Drive {
+            matches!(mode, Reduce::Drive | Reduce::Relation | Reduce::Filter).then_some(Drive {
                 first_projection,
                 projections: &mut projections,
                 relation: mode == Reduce::Relation,
+                filter: mode == Reduce::Filter,
             }),
             strat,
         );
