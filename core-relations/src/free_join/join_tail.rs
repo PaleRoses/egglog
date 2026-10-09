@@ -576,7 +576,7 @@ pub(super) fn sort_plan_by_size_inner(
     // Only a plan with a `Relation` stage binds a variable in two stages or
     // keys a stage on the variables bound so far; any other plan skips the
     // bookkeeping for both.
-    let relations = instrs.iter().any(|stage| {
+    let is_relation = |stage: &JoinStage| {
         matches!(
             stage,
             JoinStage::FusedIntersectMat {
@@ -584,7 +584,8 @@ pub(super) fn sort_plan_by_size_inner(
                 ..
             }
         )
-    });
+    };
+    let relations = instrs.iter().any(is_relation);
     // A refinement counts a binding that restricts an atom's subset: a column
     // whose variable another stage counted earlier already bound restricts
     // nothing, and adds nothing. `binders` maps each variable to the stage
@@ -593,13 +594,19 @@ pub(super) fn sort_plan_by_size_inner(
     // placed) still counts as before; only a second stage binding the same
     // variable, which a `Relation` stage and the atoms that share its
     // variables can be, is affected.
+    //
+    // A `Relation` stage binds only the variables still free where it runs,
+    // and refines atoms only once it has run: `bound` (below) maps each
+    // variable to the stage that first bound it in the physical prefix and the
+    // stages placed since, and a variable some other stage bound before it
+    // there is stale for it.
     let mut binders = relations.then(|| with_pool_set(|ps| ps.get::<DenseIdMap<Variable, u16>>()));
     let update_refinements =
         |stage_index: usize,
          refinements: &mut DenseIdMap<AtomId, i64>,
-         binders: Option<&mut DenseIdMap<Variable, u16>>| {
+         track: Option<(&mut DenseIdMap<Variable, u16>, &DenseIdMap<Variable, u16>)>| {
             let stage = &instrs[stage_index];
-            let Some(binders) = binders else {
+            let Some((binders, bound)) = track else {
                 // No variable is bound twice: every column counts.
                 match stage {
                     JoinStage::Intersect { scans, .. } => scans.iter().for_each(|scan| {
@@ -627,10 +634,14 @@ pub(super) fn sort_plan_by_size_inner(
                 return;
             };
             let me = u16::try_from(stage_index).expect("too many instructions");
+            let relation = is_relation(stage);
+            let own = |var: Variable| !relation || bound.get(var).is_none_or(|s| *s == me);
             for_each_bound_var(stage, |var| {
-                binders.get_or_insert(var, || me);
+                if own(var) {
+                    binders.get_or_insert(var, || me);
+                }
             });
-            let stale = |var: Variable| binders.get(var).is_some_and(|s| *s != me);
+            let stale = |var: Variable| binders.get(var).is_some_and(|s| *s != me) || !own(var);
             // The columns of `spec` that a variable not yet bound keys. An atom
             // holding a variable in several columns keys it once per column,
             // as the count without stale variables does, so a stale variable
@@ -669,12 +680,6 @@ pub(super) fn sort_plan_by_size_inner(
             }
         };
 
-    // Count how many times each atom has been refined in the logical plan
-    // prefix, as the DVO heuristic does.
-    for stage_index in 0..range.start {
-        update_refinements(stage_index, &mut times_refined, binders.as_deref_mut());
-    }
-
     // The variables bound by the physical prefix and by each stage placed
     // since, which a `Relation` stage is keyed on.
     let mut bound = relations.then(|| with_pool_set(|ps| ps.get::<DenseIdMap<Variable, u16>>()));
@@ -689,6 +694,35 @@ pub(super) fn sort_plan_by_size_inner(
     for position in 0..range.start {
         mark_bound(order.get(position), bound.as_deref_mut());
     }
+
+    // A `Relation` stage that has run counts where it ran, ahead of the
+    // logical prefix; one that has not counts only once it is placed.
+    if relations {
+        (0..range.start)
+            .map(|position| order.get(position))
+            .filter(|stage_index| is_relation(&instrs[*stage_index]))
+            .for_each(|stage_index| {
+                update_refinements(
+                    stage_index,
+                    &mut times_refined,
+                    binders.as_deref_mut().zip(bound.as_deref()),
+                )
+            });
+    }
+
+    // Count how many times each atom has been refined in the logical plan
+    // prefix, as the DVO heuristic does.
+    instrs[..range.start]
+        .iter()
+        .enumerate()
+        .filter(|(_, stage)| !(relations && is_relation(stage)))
+        .for_each(|(stage_index, _)| {
+            update_refinements(
+                stage_index,
+                &mut times_refined,
+                binders.as_deref_mut().zip(bound.as_deref()),
+            )
+        });
 
     // We prioritize stages by
     //
@@ -762,7 +796,11 @@ pub(super) fn sort_plan_by_size_inner(
             }
         }
         // Update the counts after a new instruction is selected.
-        update_refinements(order.get(i), &mut times_refined, binders.as_deref_mut());
+        update_refinements(
+            order.get(i),
+            &mut times_refined,
+            binders.as_deref_mut().zip(bound.as_deref()),
+        );
         mark_bound(order.get(i), bound.as_deref_mut());
     }
 }

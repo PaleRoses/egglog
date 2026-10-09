@@ -1272,15 +1272,7 @@ fn plan_single_bag(
     }
 
     let (header, mut instrs) = plan_stages(&stripped_bag, strat);
-    if drive.as_ref().is_some_and(|drive| drive.ordered) {
-        // Relation stages go after the bag's own stages, so that they enter
-        // the logical prefix the ordering anchors its refinement counts on
-        // only once they have run; dynamic variable ordering places them.
-        instrs.splice(0..0, prologue);
-        instrs.extend(drives);
-    } else {
-        instrs.splice(0..0, prologue.into_iter().chain(drives));
-    }
+    instrs.splice(0..0, prologue.into_iter().chain(drives));
     instrs.extend(epilogue);
 
     let stages = JoinStages::new(instrs);

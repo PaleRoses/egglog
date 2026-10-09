@@ -8,11 +8,12 @@ use smallvec::{SmallVec, smallvec};
 use crate::{
     common::{IndexMap, Value},
     free_join::{
-        AtomId, SubAtom, Variable,
+        AtomId, ProcessedConstraints, SubAtom, TableId, Variable,
         plan::{JoinStage, MatId, MatScanMode, ScanSpec, SingleScanSpec},
     },
     numeric_id::{DenseIdMap, NumericId},
     offsets::Subset,
+    query::{Atom, VarColumnMap},
     row_buffer::RowBuffer,
     table_spec::ColumnId,
 };
@@ -351,6 +352,94 @@ fn mixed_recursive_dvo_keeps_the_plan_prefix_as_its_refinement_anchor() {
     );
 
     assert_eq!(order, InstrOrder::from_iter([1, 0, 2, 3].into_iter()));
+}
+
+#[test]
+fn a_deferred_semijoin_does_not_anchor_refinement() {
+    // Atom k holds variable k in column k. Stage 0 is the prologue over a
+    // (variable 0); stage 1, logically second, is the semijoin over a message
+    // keyed on x and y (variables 1 and 2), probing atoms 1 and 2; the rest are
+    // the atoms' own stages. Atom 2 holds only y.
+    let var = Variable::from_usize;
+    let col = ColumnId::from_usize;
+    let probe = |atom: usize| ScanSpec {
+        to_index: SubAtom {
+            atom: AtomId::from_usize(atom),
+            vars: smallvec![col(atom)],
+        },
+        constraints: Vec::new(),
+    };
+    let stages = vec![
+        JoinStage::FusedIntersectMat {
+            cover: MatId::from_usize(0),
+            mode: MatScanMode::KeyOnly,
+            bind: smallvec![(col(0), var(0))],
+            to_intersect: vec![(probe(0), smallvec![col(0)])],
+        },
+        JoinStage::FusedIntersectMat {
+            cover: MatId::from_usize(1),
+            mode: MatScanMode::Relation,
+            bind: smallvec![(col(0), var(1)), (col(1), var(2))],
+            to_intersect: vec![(probe(1), smallvec![col(0)]), (probe(2), smallvec![col(1)])],
+        },
+        intersect_stage(4, 4),
+        intersect_stage(5, 5),
+        intersect_stage(2, 2),
+        intersect_stage(3, 3),
+        intersect_stage(6, 6),
+        intersect_stage(1, 1),
+    ];
+    let mut atoms = DenseIdMap::new();
+    for k in 0..7 {
+        let mut var_columns = VarColumnMap::default();
+        var_columns.insert(var(k), col(k));
+        atoms.insert(
+            AtomId::from_usize(k),
+            Atom {
+                table: TableId::dummy(),
+                var_columns,
+                constraints: ProcessedConstraints::dummy(),
+            },
+        );
+    }
+    let mut binding_info = BindingInfo::default();
+    for (atom, rows) in [
+        (0, 100),
+        (1, 100),
+        (2, 100),
+        (3, 10),
+        (4, 100),
+        (5, 100),
+        (6, 100),
+    ] {
+        binding_info.insert_subset(
+            AtomId::from_usize(atom),
+            Subset::Dense(crate::OffsetRange::new(
+                crate::RowId::from_usize(0),
+                crate::RowId::from_usize(rows),
+            )),
+        );
+    }
+    let mut message = IndexMap::<Vec<Value>, RowBuffer>::default();
+    for k in 0..50 {
+        message.insert(
+            vec![Value::from_usize(k), Value::from_usize(k)],
+            RowBuffer::new(1),
+        );
+    }
+    binding_info
+        .materializations
+        .insert(MatId::from_usize(1), Arc::new(message));
+
+    // The prologue and the stages of variables 4, 5 and 6 have run; the
+    // semijoin, logically second, has not. Nothing has bound y, so atom 2
+    // has not been refined, and the smallest unrefined atom (atom 3, 10 rows)
+    // goes first. Crediting the unrun semijoin with binding y would refine
+    // atom 2 and promote its stage (stage 4) ahead of it.
+    let mut order = InstrOrder::from_iter([0, 2, 3, 6, 4, 5, 1, 7].into_iter());
+    sort_plan_by_size_inner(&mut order, 4..8, &stages, &atoms, &mut binding_info);
+
+    assert_eq!(order.get(4), 5);
 }
 
 fn prepared_for(stages: &[JoinStage]) -> PreparedJoinLayout {
