@@ -65,15 +65,15 @@ jobs:
       - name: Wait for a quiet machine
         # The other runners on this laptop yield CPU weight but still share it.
         # A benchmark starts only once the one-minute load is under 1.5; if the
-        # machine is never quiet within 40 minutes the job fails rather than
+        # machine is never quiet within 3 hours the job fails rather than
         # print a contaminated table as a result.
         run: |
-          for i in $(seq 1 240); do
+          for i in $(seq 1 1080); do
             load=$(cut -d' ' -f1 /proc/loadavg)
             awk -v l="$load" 'BEGIN { exit !(l < 1.5) }' && { echo "quiet after $((i*10)) s, load $load"; exit 0; }
             sleep 10
           done
-          echo "NOT quiet after 40 min, load $(cut -d' ' -f1 /proc/loadavg); refusing to benchmark"
+          echo "NOT quiet after 3 h, load $(cut -d' ' -f1 /proc/loadavg); refusing to benchmark"
           exit 1
       - name: Load and power before the run
         run: cat /proc/loadavg; cat /sys/class/power_supply/A*/online
