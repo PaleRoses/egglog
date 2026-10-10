@@ -21,7 +21,8 @@ use crate::{
 use crate::free_join::{
     join_tail::{
         BindingInfo, InstrOrder, for_each_stage_atom, materialization_is_live_in_tail,
-        packed_child_shape_in_tail, scan_atom_tail_use, sort_plan_by_size_inner, suffix_stage_mask,
+        packed_child_shape_in_tail, resorts_after_driver, scan_atom_tail_use,
+        sort_plan_by_size_inner, suffix_stage_mask,
     },
     packed_cache::{FamilyId, OwnedAtomRows},
     packed_trie::ChildShape,
@@ -349,17 +350,17 @@ fn mixed_recursive_dvo_keeps_the_plan_prefix_as_its_refinement_anchor() {
         &stages,
         &DenseIdMap::new(),
         &mut binding_info,
+        false,
     );
 
     assert_eq!(order, InstrOrder::from_iter([1, 0, 2, 3].into_iter()));
 }
 
-#[test]
-fn a_deferred_semijoin_does_not_anchor_refinement() {
-    // Atom k holds variable k in column k. Stage 0 is the prologue over a
-    // (variable 0); stage 1, logically second, is the semijoin over a message
-    // keyed on x and y (variables 1 and 2), probing atoms 1 and 2; the rest are
-    // the atoms' own stages. Atom 2 holds only y.
+/// A driven block. Atom k holds variable k in column k. Stage 0 is the
+/// prologue over a (variable 0); stage 1, logically second, is the semijoin
+/// over a message keyed on x and y (variables 1 and 2), probing atoms 1 and 2;
+/// the rest are the atoms' own stages. Atom 2 holds only y.
+fn driven_block_stages() -> Vec<JoinStage> {
     let var = Variable::from_usize;
     let col = ColumnId::from_usize;
     let probe = |atom: usize| ScanSpec {
@@ -369,7 +370,7 @@ fn a_deferred_semijoin_does_not_anchor_refinement() {
         },
         constraints: Vec::new(),
     };
-    let stages = vec![
+    vec![
         JoinStage::FusedIntersectMat {
             cover: MatId::from_usize(0),
             mode: MatScanMode::KeyOnly,
@@ -388,7 +389,14 @@ fn a_deferred_semijoin_does_not_anchor_refinement() {
         intersect_stage(3, 3),
         intersect_stage(6, 6),
         intersect_stage(1, 1),
-    ];
+    ]
+}
+
+#[test]
+fn a_deferred_semijoin_does_not_anchor_refinement() {
+    let var = Variable::from_usize;
+    let col = ColumnId::from_usize;
+    let stages = driven_block_stages();
     let mut atoms = DenseIdMap::new();
     for k in 0..7 {
         let mut var_columns = VarColumnMap::default();
@@ -437,9 +445,25 @@ fn a_deferred_semijoin_does_not_anchor_refinement() {
     // goes first. Crediting the unrun semijoin with binding y would refine
     // atom 2 and promote its stage (stage 4) ahead of it.
     let mut order = InstrOrder::from_iter([0, 2, 3, 6, 4, 5, 1, 7].into_iter());
-    sort_plan_by_size_inner(&mut order, 4..8, &stages, &atoms, &mut binding_info);
+    sort_plan_by_size_inner(&mut order, 4..8, &stages, &atoms, &mut binding_info, false);
 
     assert_eq!(order.get(4), 5);
+}
+
+#[test]
+fn a_driven_block_resorts_after_a_frame_that_paid_for_the_sort() {
+    // Eight stages: sorting the seven after the driver evaluates at most 49
+    // stage keys, so the next frame re-sorts after a frame of 49 `run_plan`
+    // calls, and never at the first frame.
+    let stages = driven_block_stages();
+    let driven = InstrOrder::from_iter(0..8);
+    assert!(!resorts_after_driver(&driven, &stages, None));
+    assert!(!resorts_after_driver(&driven, &stages, Some(48)));
+    assert!(resorts_after_driver(&driven, &stages, Some(49)));
+
+    // With the driver anywhere but first, no frame is a driver's.
+    let undriven = InstrOrder::from_iter([2, 0, 1, 3, 4, 5, 6, 7].into_iter());
+    assert!(!resorts_after_driver(&undriven, &stages, Some(u64::MAX)));
 }
 
 fn prepared_for(stages: &[JoinStage]) -> PreparedJoinLayout {
