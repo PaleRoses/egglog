@@ -16,7 +16,11 @@
 //! moves to another task. Index selection and probing remain in the probe
 //! layer; the join-tail layer decides their order and lifetime.
 
-use std::{cell::RefCell, cmp, mem, sync::Arc};
+use std::{
+    cell::{Cell, RefCell},
+    cmp, mem,
+    sync::Arc,
+};
 
 use dashmap::mapref::{entry::Entry, one::RefMut};
 use egglog_concurrency::{Scope, SharedArena};
@@ -45,7 +49,8 @@ use super::{
     join_tail::{
         BindingInfo, BindingSet, BorrowedLocalState, InstrOrder, LeafScans, LocalState,
         MatchCounter, RetiredLocalStates, SubsetClonePlan, atom_tail_use, estimate_size,
-        for_each_bound_var, materialization_is_live_in_tail, sort_plan_by_size,
+        for_each_bound_var, materialization_is_live_in_tail, resorts_after_driver,
+        sort_plan_by_size,
     },
     packed_cache::{OwnedAtomRows, TrieCache},
     packed_trie::{ChildShape, TrieNode},
@@ -592,6 +597,14 @@ struct JoinState<'db, 'state, 'exec> {
     handle: LazyArenaHandle<'exec>,
     /// Reused `(value, row)` workspace for constructing packed trie nodes.
     packed_scratch: RefCell<Vec<(Value, RowId)>>,
+    /// `run_plan` calls made so far.
+    run_plan_calls: Cell<u64>,
+    /// `run_plan_calls` when the current frame of the running block's first
+    /// stage reached the second, or `None` before the first such frame.
+    frame_start: Cell<Option<u64>>,
+    /// Whether the running block still re-sorts after its driver: false once
+    /// such a re-sort left the block's order unchanged.
+    driver_resorts: Cell<bool>,
 }
 
 impl<'a, 'state, 'exec> JoinState<'a, 'state, 'exec> {
@@ -609,6 +622,9 @@ impl<'a, 'state, 'exec> JoinState<'a, 'state, 'exec> {
             arena,
             handle: LazyArenaHandle::new(arena),
             packed_scratch: RefCell::new(Vec::new()),
+            run_plan_calls: Cell::new(0),
+            frame_start: Cell::new(None),
+            driver_resorts: Cell::new(true),
         }
     }
 
@@ -1264,6 +1280,8 @@ impl<'a, 'state, 'exec> JoinState<'a, 'state, 'exec> {
                 return;
             }
         }
+        self.frame_start.set(None);
+        self.driver_resorts.set(true);
         let mut order = InstrOrder::from_iter(0..stages.instrs.len());
         let mut leaf_scans: LeafScans = smallvec::smallvec![false; stages.instrs.len()];
         sort_plan_by_size(
@@ -1273,6 +1291,7 @@ impl<'a, 'state, 'exec> JoinState<'a, 'state, 'exec> {
             &stages.instrs,
             atoms,
             binding_info,
+            false,
         );
         let all_stages = prepared.all_stage_mask::<M>();
         debug_assert!(
@@ -1415,6 +1434,7 @@ impl<'a, 'state, 'exec> JoinState<'a, 'state, 'exec> {
         if self.exec_state.should_stop() {
             return;
         }
+        self.run_plan_calls.set(self.run_plan_calls.get() + 1);
 
         #[cfg(debug_assertions)]
         if let Some(remaining_stages) = remaining_stages {
@@ -1439,10 +1459,24 @@ impl<'a, 'state, 'exec> JoinState<'a, 'state, 'exec> {
             TopLevelPartition::scan_size,
         );
         let chunk_size = action_buf.morsel_size(cur, instr_order.len());
-        if cur_size > 32 && cur % 3 == 1 && cur < instr_order.len() - 1 {
+        // A driven block's stages were sorted before its driver bound
+        // anything; after a driver frame that paid for it, the stages after the
+        // driver are sorted again on the sizes the driver left, until such a
+        // re-sort leaves the order as it was.
+        let after_driver = cur == 1 && self.driver_resorts.get() && {
+            let now = self.run_plan_calls.get();
+            let previous = self.frame_start.replace(Some(now));
+            resorts_after_driver(
+                instr_order,
+                &stages.instrs,
+                previous.map(|start| now - start),
+            )
+        };
+        if (cur_size > 32 || after_driver) && cur % 3 == 1 && cur < instr_order.len() - 1 {
             // Re-evaluate the remaining suffix after observing the residuals
             // produced by earlier stages. Packed child families make the
             // resulting atom-local successor choice safe to cache again.
+            let before = after_driver.then(|| instr_order.clone());
             sort_plan_by_size(
                 instr_order,
                 leaf_scans,
@@ -1450,7 +1484,11 @@ impl<'a, 'state, 'exec> JoinState<'a, 'state, 'exec> {
                 &stages.instrs,
                 atoms,
                 binding_info,
+                after_driver,
             );
+            if before.is_some_and(|before| before == *instr_order) {
+                self.driver_resorts.set(false);
+            }
             cur_size = estimate_size(&stages.instrs[instr_order.get(cur)], binding_info);
         }
 

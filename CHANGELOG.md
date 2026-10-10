@@ -2,6 +2,7 @@
 
 ## [Unreleased] - ReleaseDate
 
+- In a decomposed rule, a bag driven by an earlier bag's materialization sorts its stages again on the sizes the driver's bindings leave, once a driver frame has made enough join calls to pay for the sort, instead of keeping the order chosen before the driver bound anything (#960).
 - In a decomposed rule, each message a bag receives after its first is a semijoin stage that dynamic variable ordering places among the bag's atoms, instead of a lookup after those atoms are joined, so a small message filters the bag early (#946).
 - **Packed join indexes are shared across all plans of a rule-set run.** Plans that start from the same table and fast constraints already shared a trie root; now the packed indexes built below that root (catalog and projection continuations and their descendants) are published run-wide under per-table successor families, so an index over the same rows and column is built once per run instead of once per plan. Subsets of at most 8 rows reached through such a slot are also cached as packed nodes rather than re-indexed on every probe.
 - Free-join plans with 65 to 128 stages now use constant-time tail metadata (128-bit stage masks) instead of rescanning the remaining stages; smaller plans keep their 64-bit masks. `paged_llama` runs about 17% faster.

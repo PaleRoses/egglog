@@ -418,7 +418,9 @@ pub(super) fn is_reorder_barrier(stage: &JoinStage) -> bool {
 /// logical plan prefix, increasing live residual size, then decreasing number
 /// of intersected relations. Materialization stages that do not commute remain
 /// fixed barriers. Reordering can also change factorized leaf-scan eligibility,
-/// so [`recompute_leaf_scans`] runs after every change.
+/// so [`recompute_leaf_scans`] runs after every change. `live` marks a re-sort
+/// that [`resorts_after_driver`] called for, whose refinement count credits
+/// nothing through a constant (see [`sort_plan_by_size_inner`]).
 pub(super) fn sort_plan_by_size(
     order: &mut InstrOrder,
     leaf_scans: &mut LeafScans,
@@ -426,16 +428,52 @@ pub(super) fn sort_plan_by_size(
     instrs: &[JoinStage],
     atoms: &DenseIdMap<AtomId, Atom>,
     binding_info: &mut BindingInfo<'_, '_>,
+    live: bool,
 ) {
     let mut last_pos = start;
     for i in start..instrs.len() {
         if is_reorder_barrier(&instrs[i]) {
-            sort_plan_by_size_inner(order, last_pos..i, instrs, atoms, binding_info);
+            sort_plan_by_size_inner(order, last_pos..i, instrs, atoms, binding_info, live);
             last_pos = i + 1;
         }
     }
-    sort_plan_by_size_inner(order, last_pos..instrs.len(), instrs, atoms, binding_info);
+    sort_plan_by_size_inner(
+        order,
+        last_pos..instrs.len(),
+        instrs,
+        atoms,
+        binding_info,
+        live,
+    );
     recompute_leaf_scans(order, leaf_scans, instrs, start);
+}
+
+/// Whether the stages after a driven block's driver are sorted again as the
+/// driver's next frame reaches them, given the `run_plan` calls the previous
+/// frame made (`None` at the first frame).
+///
+/// A driven block starts with a `KeyOnly` scan of an earlier block's
+/// materialization, and its stages are sorted before that driver binds
+/// anything, on sizes no frame sees. Sorting the stages after it evaluates at
+/// most (len - 1)^2 stage keys, and each `run_plan` call evaluates one stage
+/// size, so sorting only after a frame of at least (len - 1)^2 calls keeps the
+/// sorting work within the visiting work, whatever the frames' sizes. A plan
+/// whose first stage is not a driver is never sorted here.
+pub(super) fn resorts_after_driver(
+    order: &InstrOrder,
+    instrs: &[JoinStage],
+    previous_frame: Option<u64>,
+) -> bool {
+    let driven = order.len() > 1
+        && matches!(
+            &instrs[order.get(0)],
+            JoinStage::FusedIntersectMat {
+                mode: MatScanMode::KeyOnly,
+                ..
+            }
+        );
+    let tail = order.len().saturating_sub(1) as u64;
+    driven && previous_frame.is_some_and(|calls| calls >= tail * tail)
 }
 
 /// Recompute which scheduled stages can emit a factorized binding set.
@@ -610,11 +648,59 @@ pub(super) fn sort_plan_by_size_inner(
     instrs: &[JoinStage],
     atoms: &DenseIdMap<AtomId, Atom>,
     binding_info: &mut BindingInfo<'_, '_>,
+    live: bool,
 ) {
     // Nothing to sort if there's 0 or 1 element.
     if range.len() <= 1 {
         return;
     }
+    let binding_info: &BindingInfo<'_, '_> = binding_info;
+    // A live re-sort sees the sizes the current frame's bindings left. An atom
+    // with at most one row left there is a constant: each variable it keys has
+    // one value. Binding such a variable keeps, in every other atom of the
+    // stage, the rows that share the value, and a value most rows share (a nil,
+    // a dtype) keeps nearly all of them, so it earns those atoms no credit. A
+    // fused stage's cover is refined by its own scan and keeps its credit.
+    let constant = |atom: AtomId| {
+        binding_info
+            .subsets
+            .get(atom)
+            .is_some_and(|rows| rows.size() <= 1)
+    };
+    // Whether, at a live re-sort, a constant atom of `stage` other than `atom`
+    // keys `var`.
+    let pinned = |stage: &JoinStage, atom: AtomId, var: Variable| {
+        live && {
+            let keys = |spec: &&ScanSpec| {
+                let holder = &atoms[spec.to_index.atom];
+                spec.to_index
+                    .vars
+                    .iter()
+                    .any(|col| holder.get_var(*col) == Some(var))
+            };
+            let constants = match stage {
+                JoinStage::Intersect { scans, .. } => {
+                    scans.iter().filter(|scan| constant(scan.atom)).count()
+                }
+                JoinStage::FusedIntersect {
+                    cover,
+                    to_intersect,
+                    ..
+                } => std::iter::once(cover)
+                    .chain(to_intersect.iter().map(|(spec, _)| spec))
+                    .filter(|spec| constant(spec.to_index.atom))
+                    .filter(keys)
+                    .count(),
+                JoinStage::FusedIntersectMat { to_intersect, .. } => to_intersect
+                    .iter()
+                    .map(|(spec, _)| spec)
+                    .filter(|spec| constant(spec.to_index.atom))
+                    .filter(keys)
+                    .count(),
+            };
+            constants > usize::from(constant(atom))
+        }
+    };
     // How many times an atom has been intersected/joined
     let mut times_refined = with_pool_set(|ps| ps.get::<DenseIdMap<AtomId, i64>>());
     let semijoins = instrs.iter().any(is_semijoin);
@@ -624,16 +710,32 @@ pub(super) fn sort_plan_by_size_inner(
                               credit: Option<&mut SemijoinCredit>| {
         let stage = &instrs[stage_index];
         let credit = credit.map(|credit| credit.count(stage_index, stage));
+        let stale = |var| credit.is_some_and(|credit| credit.stale(stage_index, stage, var));
         let fresh = |spec: &ScanSpec| {
             credit.map_or(spec.to_index.vars.len() as i64, |credit| {
                 credit.fresh(stage_index, stage, &atoms[spec.to_index.atom], spec)
             })
         };
+        // The fresh columns of `spec`, an atom the stage probes, less those
+        // keyed on a variable that a constant pins.
+        let probed = |spec: &ScanSpec| {
+            let atom = &atoms[spec.to_index.atom];
+            let pinned_columns = || {
+                spec.to_index
+                    .vars
+                    .iter()
+                    .filter_map(|col| atom.get_var(*col))
+                    .filter(|var| !stale(*var) && pinned(stage, spec.to_index.atom, *var))
+                    .count() as i64
+            };
+            fresh(spec) - if live { pinned_columns() } else { 0 }
+        };
         match stage {
             JoinStage::Intersect { var, scans } => {
-                if !credit.is_some_and(|credit| credit.stale(stage_index, stage, *var)) {
+                if !stale(*var) {
                     scans.iter().for_each(|scan| {
-                        *refinements.get_or_default(scan.atom) += 1;
+                        *refinements.get_or_default(scan.atom) +=
+                            i64::from(!pinned(stage, scan.atom, *var));
                     })
                 }
             }
@@ -644,12 +746,12 @@ pub(super) fn sort_plan_by_size_inner(
             } => {
                 *refinements.get_or_default(cover.to_index.atom) += fresh(cover);
                 to_intersect.iter().for_each(|(spec, _)| {
-                    *refinements.get_or_default(spec.to_index.atom) += fresh(spec);
+                    *refinements.get_or_default(spec.to_index.atom) += probed(spec);
                 });
             }
             JoinStage::FusedIntersectMat { to_intersect, .. } => {
                 to_intersect.iter().for_each(|(spec, _)| {
-                    *refinements.get_or_default(spec.to_index.atom) += fresh(spec);
+                    *refinements.get_or_default(spec.to_index.atom) += probed(spec);
                 });
             }
         }

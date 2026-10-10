@@ -350,6 +350,7 @@ fn mixed_recursive_dvo_keeps_the_plan_prefix_as_its_refinement_anchor() {
         &stages,
         &DenseIdMap::new(),
         &mut binding_info,
+        false,
     );
 
     assert_eq!(order, InstrOrder::from_iter([1, 0, 2, 3].into_iter()));
@@ -435,7 +436,7 @@ fn a_deferred_semijoin_does_not_anchor_refinement() {
     // goes first. Crediting the unrun semijoin with binding y would refine
     // atom 2 and promote its stage (stage 4) ahead of it.
     let mut order = InstrOrder::from_iter([0, 2, 3, 6, 4, 5, 1, 7].into_iter());
-    sort_plan_by_size_inner(&mut order, 4..8, &stages, &atoms, &mut binding_info);
+    sort_plan_by_size_inner(&mut order, 4..8, &stages, &atoms, &mut binding_info, false);
 
     assert_eq!(order.get(4), 5);
 }
@@ -451,7 +452,7 @@ fn rebinding_a_semijoin_variable_adds_no_refinement() {
     // Crediting stage 4 for y as well would refine atom 2 twice and put it
     // first.
     let mut order = InstrOrder::from_iter([0, 1, 2, 3, 6, 7, 4, 5].into_iter());
-    sort_plan_by_size_inner(&mut order, 6..8, &stages, &atoms, &mut binding_info);
+    sort_plan_by_size_inner(&mut order, 6..8, &stages, &atoms, &mut binding_info, false);
 
     assert_eq!(order.get(6), 5);
 }
