@@ -21,7 +21,7 @@ use crate::{
 use crate::free_join::{
     join_tail::{
         BindingInfo, InstrOrder, LeafScans, for_each_stage_atom, materialization_is_live_in_tail,
-        packed_child_shape_in_tail, recompute_leaf_scans, scan_atom_tail_use,
+        packed_child_shape_in_tail, recompute_leaf_scans, resorts_after_driver, scan_atom_tail_use,
         sort_plan_by_size_inner, suffix_stage_mask,
     },
     packed_cache::{FamilyId, OwnedAtomRows},
@@ -480,6 +480,22 @@ fn a_semijoin_blocks_an_earlier_leaf_binding_its_variables() {
 
     assert!(!leaf_at([0, 8, 1, 2, 3, 4, 5, 6, 7], 1));
     assert!(leaf_at([0, 1, 2, 3, 4, 5, 6, 7, 8], 8));
+}
+
+#[test]
+fn a_driven_block_resorts_after_a_frame_that_paid_for_the_sort() {
+    // Eight stages: sorting the seven after the driver evaluates at most 49
+    // stage keys, so the next frame re-sorts after a frame of 49 `run_plan`
+    // calls, and never at the first frame.
+    let (stages, _, _) = deferred_semijoin_fixture();
+    let driven = InstrOrder::from_iter(0..8);
+    assert!(!resorts_after_driver(&driven, &stages, None));
+    assert!(!resorts_after_driver(&driven, &stages, Some(48)));
+    assert!(resorts_after_driver(&driven, &stages, Some(49)));
+
+    // With the driver anywhere but first, no frame is a driver's.
+    let undriven = InstrOrder::from_iter([2, 0, 1, 3, 4, 5, 6, 7].into_iter());
+    assert!(!resorts_after_driver(&undriven, &stages, Some(u64::MAX)));
 }
 
 fn prepared_for(stages: &[JoinStage]) -> PreparedJoinLayout {
