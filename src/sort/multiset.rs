@@ -12,8 +12,17 @@ pub struct MultiSetContainer {
 /// Canonical multiset term form `(multiset-of e0 e1 ...)`: elements sorted by
 /// [`TermDag::ast_cmp`] with multiplicities kept as repeats, so proof checking
 /// can reproduce it from terms.
-fn normalize_multiset_term(termdag: &mut TermDag, mut children: Vec<TermId>) -> TermId {
-    termdag.sort_terms_by_ast(&mut children);
+fn normalize_multiset_elements<T>(
+    termdag: &TermDag,
+    mut children: Vec<T>,
+    term: impl Fn(&T) -> TermId,
+) -> Vec<T> {
+    children.sort_by(|left, right| termdag.ast_cmp(term(left), term(right)));
+    children
+}
+
+fn normalize_multiset_term(termdag: &mut TermDag, children: Vec<TermId>) -> TermId {
+    let children = normalize_multiset_elements(termdag, children, |term| *term);
     termdag.app("multiset-of".into(), children)
 }
 
@@ -254,16 +263,18 @@ impl ContainerSort for MultiSetSort {
         }
     }
 
-    fn reconstruct_termdag(
+    fn reconstruct(
         &self,
         _container_values: &ContainerValues,
         _value: Value,
-        termdag: &mut TermDag,
-        element_terms: Vec<TermId>,
-    ) -> TermId {
+        dag: &mut ExtractionDag,
+        element_terms: Vec<OriginId>,
+    ) -> OriginId {
         // Canonical form (sorted by deterministic AST order, multiplicities
         // preserved as repeats) so proof checking can reproduce it from terms.
-        normalize_multiset_term(termdag, element_terms)
+        let elements =
+            normalize_multiset_elements(dag.termdag(), element_terms, |origin| origin.term());
+        dag.app("multiset-of".into(), elements)
     }
 
     fn rebuild_container_normalizer(&self) -> Option<(String, PrimitiveValidator)> {

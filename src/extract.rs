@@ -226,27 +226,254 @@ impl DagCostModel<DefaultCost> for AdditiveCostModel {
     }
 }
 
+/// An extraction occurrence and its derived spelling in an [`ExtractionDag`].
+///
+/// Unlike a `TermId`, this identity distinguishes equal spellings selected for
+/// different typed values. Handles are scoped to the DAG that constructed
+/// them, just like `TermId`; they must not be passed to a different DAG.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub struct OriginId {
+    index: usize,
+    term: TermId,
+}
+
+impl OriginId {
+    pub fn index(self) -> usize {
+        self.index
+    }
+
+    pub fn term(self) -> TermId {
+        self.term
+    }
+}
+
+/// Provenance retained at the point native extraction constructs a term.
+#[derive(Clone, Debug)]
+pub enum ExtractionOrigin {
+    /// A primitive or synthetic spelling without extracted child occurrences.
+    Spelled(TermId),
+    /// An application with its actual, normalized child occurrences.
+    Apply {
+        term: TermId,
+        children: Vec<OriginId>,
+    },
+    /// The typed value represented by a spelling occurrence.
+    Value {
+        sort: ArcSort,
+        value: Value,
+        spelling: OriginId,
+    },
+}
+
+impl ExtractionOrigin {
+    fn term(&self) -> TermId {
+        match self {
+            Self::Spelled(term) | Self::Apply { term, .. } => *term,
+            Self::Value { spelling, .. } => spelling.term(),
+        }
+    }
+}
+
+impl PartialEq for ExtractionOrigin {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Spelled(left), Self::Spelled(right)) => left == right,
+            (
+                Self::Apply {
+                    term: left_term,
+                    children: left_children,
+                },
+                Self::Apply {
+                    term: right_term,
+                    children: right_children,
+                },
+            ) => left_term == right_term && left_children == right_children,
+            (
+                Self::Value {
+                    sort: left_sort,
+                    value: left_value,
+                    spelling: left_spelling,
+                },
+                Self::Value {
+                    sort: right_sort,
+                    value: right_value,
+                    spelling: right_spelling,
+                },
+            ) => {
+                Arc::ptr_eq(left_sort, right_sort)
+                    && left_value == right_value
+                    && left_spelling == right_spelling
+            }
+            _ => false,
+        }
+    }
+}
+
+impl Eq for ExtractionOrigin {}
+
+impl std::hash::Hash for ExtractionOrigin {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        std::mem::discriminant(self).hash(state);
+        match self {
+            Self::Spelled(term) => term.hash(state),
+            Self::Apply { term, children } => {
+                term.hash(state);
+                children.hash(state);
+            }
+            Self::Value {
+                sort,
+                value,
+                spelling,
+            } => {
+                Arc::as_ptr(sort).cast::<()>().hash(state);
+                value.hash(state);
+                spelling.hash(state);
+            }
+        }
+    }
+}
+
+/// Topological extraction provenance; every edge points to an earlier node.
+#[derive(Clone, Debug, Default)]
+pub struct ExtractionOrigins(IndexSet<ExtractionOrigin>);
+
+impl ExtractionOrigins {
+    pub fn get(&self, origin: OriginId) -> &ExtractionOrigin {
+        self.0
+            .get_index(origin.index)
+            .filter(|stored| stored.term() == origin.term())
+            .expect("origin must belong to this extraction DAG")
+    }
+
+    fn contains(&self, origin: OriginId) -> bool {
+        self.0
+            .get_index(origin.index)
+            .is_some_and(|stored| stored.term() == origin.term())
+    }
+
+    pub fn iter(&self) -> impl ExactSizeIterator<Item = (OriginId, &ExtractionOrigin)> {
+        self.0.iter().enumerate().map(|(index, origin)| {
+            (
+                OriginId {
+                    index,
+                    term: origin.term(),
+                },
+                origin,
+            )
+        })
+    }
+
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+}
+
+/// Native spelling and provenance storage. Term hashconsing owns spelling;
+/// occurrence identity separately retains the selections that produced it.
+#[derive(Clone, Debug, Default)]
+pub struct ExtractionDag {
+    termdag: TermDag,
+    origins: ExtractionOrigins,
+}
+
+impl ExtractionDag {
+    pub fn termdag(&self) -> &TermDag {
+        &self.termdag
+    }
+
+    pub fn termdag_mut(&mut self) -> &mut TermDag {
+        &mut self.termdag
+    }
+
+    pub fn origins(&self) -> &ExtractionOrigins {
+        &self.origins
+    }
+
+    pub fn into_termdag(self) -> TermDag {
+        self.termdag
+    }
+
+    /// Starts provenance over an existing spelling arena, as used by proof
+    /// reconstruction. Existing spellings have no claimed extraction origin.
+    pub fn from_termdag(termdag: TermDag) -> Self {
+        Self {
+            termdag,
+            origins: ExtractionOrigins::default(),
+        }
+    }
+
+    fn insert(&mut self, origin: ExtractionOrigin) -> OriginId {
+        let term = origin.term();
+        let (index, _) = self.origins.0.insert_full(origin);
+        OriginId { index, term }
+    }
+
+    pub fn spelled(&mut self, term: TermId) -> OriginId {
+        assert!(
+            term < self.termdag.size(),
+            "spelling must belong to this extraction DAG"
+        );
+        self.insert(ExtractionOrigin::Spelled(term))
+    }
+
+    /// All child handles must belong to this DAG. Exact existing origins are
+    /// shared; differing child selections remain distinct even if terms agree.
+    pub fn app(&mut self, head: String, children: Vec<OriginId>) -> OriginId {
+        assert!(
+            children.iter().all(|child| self.origins.contains(*child)),
+            "children must already belong to this extraction DAG"
+        );
+        let term = self
+            .termdag
+            .app(head, children.iter().map(|child| child.term()).collect());
+        self.insert(ExtractionOrigin::Apply { term, children })
+    }
+
+    /// `spelling` must belong to this DAG. Sort identity, native value, and the
+    /// complete spelling occurrence jointly determine sharing, not value alone.
+    pub fn value(&mut self, sort: ArcSort, value: Value, spelling: OriginId) -> OriginId {
+        assert!(
+            self.origins.contains(spelling),
+            "spelling must already belong to this extraction DAG"
+        );
+        self.insert(ExtractionOrigin::Value {
+            sort,
+            value,
+            spelling,
+        })
+    }
+}
+
 /// One extracted root or root variant.
 ///
 /// The cost is the objective value assigned by the selected extractor. Tree
 /// extraction reports tree cost; DAG extractors may instead report a per-root
-/// or per-variant DAG cost. `term` indexes the enclosing result's shared
-/// [`TermDag`].
+/// or per-variant DAG cost. `origin` indexes the enclosing result's shared DAG.
 #[derive(Clone, Debug)]
 pub struct ExtractedTerm<C> {
     /// The selected extractor's cost for this result.
     pub cost: C,
-    /// The extracted root in the enclosing result's [`TermDag`].
-    pub term: TermId,
+    /// The native selection that produced this root.
+    pub origin: OriginId,
+}
+
+impl<C> ExtractedTerm<C> {
+    pub fn term(&self) -> TermId {
+        self.origin.term()
+    }
 }
 
 /// Best-extraction results for a batch of requested roots.
 ///
-/// All returned term ids index the shared [`ExtractedTerms::termdag`].
+/// All returned origins index the shared [`ExtractedTerms::dag`].
 #[derive(Clone, Debug)]
 pub struct ExtractedTerms<C> {
     /// Shared term storage for every extracted root.
-    pub termdag: TermDag,
+    pub dag: ExtractionDag,
     /// One extraction result per requested root, in request order.
     ///
     /// `None` means that root is unextractable with the selected cost model and
@@ -256,11 +483,11 @@ pub struct ExtractedTerms<C> {
 
 /// Root-variant extraction results for a batch of requested roots.
 ///
-/// All returned term ids index the shared [`ExtractedTermVariants::termdag`].
+/// All returned origins index the shared [`ExtractedTermVariants::dag`].
 #[derive(Clone, Debug)]
 pub struct ExtractedTermVariants<C> {
     /// Shared term storage for every extracted variant.
-    pub termdag: TermDag,
+    pub dag: ExtractionDag,
     /// Outer vector follows requested-root order; each inner vector contains that root's variants.
     pub variants: Vec<Vec<ExtractedTerm<C>>>,
 }
@@ -600,34 +827,30 @@ impl<'g, C: Cost> TreeExtractor<'g, C> {
         }
     }
 
-    /// This recursively reconstruct the termdag that gives the minimum cost for eclass value.
+    /// Reconstructs selected occurrences while the native child/value pairing
+    /// is still available. The cache scope is the extraction selection scope.
     fn reconstruct_termdag_node_helper(
         &self,
         egraph: &EGraph,
-        termdag: &mut TermDag,
+        dag: &mut ExtractionDag,
         value: Value,
         sort: &ArcSort,
-        cache: &mut HashMap<(Value, String), TermId>,
-    ) -> TermId {
+        cache: &mut HashMap<(Value, String), OriginId>,
+    ) -> OriginId {
         let key = (value, sort.name().to_owned());
-        if let Some(term) = cache.get(&key) {
-            return *term;
+        if let Some(origin) = cache.get(&key) {
+            return *origin;
         }
 
-        let term = if sort.is_container_sort() {
-            let elements = sort.inner_values(egraph.backend.container_values(), value);
-            let mut ch_terms: Vec<TermId> = Vec::new();
-            for ch in elements.iter() {
-                ch_terms.push(
-                    self.reconstruct_termdag_node_helper(egraph, termdag, ch.1, &ch.0, cache),
-                );
-            }
-            sort.reconstruct_termdag_container(
-                egraph.backend.container_values(),
-                value,
-                termdag,
-                ch_terms,
-            )
+        let spelling = if sort.is_container_sort() {
+            let children = sort
+                .inner_values(egraph.backend.container_values(), value)
+                .into_iter()
+                .map(|(sort, value)| {
+                    self.reconstruct_termdag_node_helper(egraph, dag, value, &sort, cache)
+                })
+                .collect();
+            sort.reconstruct_container(egraph.backend.container_values(), value, dag, children)
         } else if sort.is_eq_sort() {
             let (func_name, hyperedge) = self
                 .parent_edge
@@ -636,25 +859,26 @@ impl<'g, C: Cost> TreeExtractor<'g, C> {
                 .get(&value)
                 .unwrap();
             let func = egraph.functions.get(func_name).unwrap();
-            let ch_sorts = &func.func_type.input;
-
-            let num_children = func.extraction_num_children();
-            let output_name = func.extraction_term_name();
-
-            let mut ch_terms: Vec<TermId> = Vec::new();
-            for (value, sort) in hyperedge.iter().take(num_children).zip(ch_sorts.iter()) {
-                ch_terms.push(
-                    self.reconstruct_termdag_node_helper(egraph, termdag, *value, sort, cache),
-                );
-            }
-            termdag.app(output_name.to_string(), ch_terms)
+            let children = hyperedge
+                .iter()
+                .take(func.extraction_num_children())
+                .zip(&func.func_type.input)
+                .map(|(value, sort)| {
+                    self.reconstruct_termdag_node_helper(egraph, dag, *value, sort, cache)
+                })
+                .collect();
+            dag.app(func.extraction_term_name().to_owned(), children)
         } else {
-            // Base value case
-            sort.reconstruct_termdag_base(egraph.backend.base_values(), value, termdag)
+            let term = sort.reconstruct_termdag_base(
+                egraph.backend.base_values(),
+                value,
+                dag.termdag_mut(),
+            );
+            dag.spelled(term)
         };
-
-        cache.insert(key, term);
-        term
+        let origin = dag.value(sort.clone(), value, spelling);
+        cache.insert(key, origin);
+        origin
     }
 
     /// Extracts the best term for `value` from a prepared sort.
@@ -663,17 +887,17 @@ impl<'g, C: Cost> TreeExtractor<'g, C> {
     /// a primitive sort, or a container of prepared sorts.
     pub fn extract_best_with_sort(
         &self,
-        termdag: &mut TermDag,
+        dag: &mut ExtractionDag,
         value: Value,
         sort: ArcSort,
     ) -> Option<ExtractedTerm<C>> {
-        self.extract_best_with_sort_cached(termdag, &mut Default::default(), value, sort)
+        self.extract_best_with_sort_cached(dag, &mut Default::default(), value, sort)
     }
 
     fn extract_best_with_sort_cached(
         &self,
-        termdag: &mut TermDag,
-        cache: &mut HashMap<(Value, String), TermId>,
+        dag: &mut ExtractionDag,
+        cache: &mut HashMap<(Value, String), OriginId>,
         value: Value,
         sort: ArcSort,
     ) -> Option<ExtractedTerm<C>> {
@@ -682,12 +906,12 @@ impl<'g, C: Cost> TreeExtractor<'g, C> {
         let canonical_value = self.find_canonical(egraph, value, &sort);
 
         let best_cost = self.compute_cost_node(egraph, canonical_value, &sort)?;
-        let term =
-            self.reconstruct_termdag_node_helper(egraph, termdag, canonical_value, &sort, cache);
+        let origin =
+            self.reconstruct_termdag_node_helper(egraph, dag, canonical_value, &sort, cache);
 
         Some(ExtractedTerm {
             cost: best_cost,
-            term,
+            origin,
         })
     }
 
@@ -725,7 +949,7 @@ impl<'g, C: Cost> TreeExtractor<'g, C> {
     /// then extracting each e-node's children with their best prepared terms.
     pub fn extract_variants_with_sort(
         &self,
-        termdag: &mut TermDag,
+        dag: &mut ExtractionDag,
         value: Value,
         nvariants: usize,
         sort: ArcSort,
@@ -772,34 +996,35 @@ impl<'g, C: Cost> TreeExtractor<'g, C> {
                 egraph.backend.for_each(func.backend_id, find_root_variants);
             }
 
-            let mut res: Vec<ExtractedTerm<C>> = Vec::new();
-            let mut cache: HashMap<(Value, String), TermId> = Default::default();
+            let mut cache: HashMap<(Value, String), OriginId> = Default::default();
             root_variants.sort();
-            root_variants.truncate(nvariants);
-            for (cost, func_name, hyperedge) in root_variants {
-                let mut ch_terms: Vec<TermId> = Vec::new();
-                let func = egraph.functions.get(&func_name).unwrap();
-                let ch_sorts = &func.func_type.input;
-                let num_children = func.extraction_num_children();
-                // For view tables, children are all but the last input (which is the e-class)
-                for (value, sort) in hyperedge.iter().zip(ch_sorts.iter()).take(num_children) {
-                    ch_terms.push(self.reconstruct_termdag_node_helper(
-                        egraph, termdag, *value, sort, &mut cache,
-                    ));
-                }
-                // Use extraction_term_name for view tables (maps to the original constructor)
-                res.push(ExtractedTerm {
-                    cost,
-                    term: termdag.app(func.extraction_term_name().to_string(), ch_terms),
-                });
-            }
-
-            res
+            root_variants
+                .into_iter()
+                .take(nvariants)
+                .map(|(cost, func_name, hyperedge)| {
+                    let func = egraph.functions.get(&func_name).unwrap();
+                    let children = hyperedge
+                        .iter()
+                        .zip(&func.func_type.input)
+                        .take(func.extraction_num_children())
+                        .map(|(value, sort)| {
+                            self.reconstruct_termdag_node_helper(
+                                egraph, dag, *value, sort, &mut cache,
+                            )
+                        })
+                        .collect();
+                    let spelling = dag.app(func.extraction_term_name().to_owned(), children);
+                    ExtractedTerm {
+                        cost,
+                        origin: dag.value(sort.clone(), canonical_value, spelling),
+                    }
+                })
+                .collect()
         } else {
             log::warn!(
                 "extracting multiple variants for containers or primitives is not implemented, returning a single variant."
             );
-            if let Some(res) = self.extract_best_with_sort(termdag, value, sort) {
+            if let Some(res) = self.extract_best_with_sort(dag, value, sort) {
                 vec![res]
             } else {
                 vec![]
@@ -892,17 +1117,17 @@ impl EGraph {
         let rootsorts = roots.iter().map(|(sort, _)| sort.clone()).collect();
         let extractor =
             TreeExtractor::compute_costs_from_rootsorts(Some(rootsorts), self, cost_model);
-        let mut termdag = TermDag::default();
+        let mut dag = ExtractionDag::default();
         let mut cache = Default::default();
         let extracted_roots = roots
             .into_iter()
             .map(|(sort, value)| {
-                extractor.extract_best_with_sort_cached(&mut termdag, &mut cache, value, sort)
+                extractor.extract_best_with_sort_cached(&mut dag, &mut cache, value, sort)
             })
             .collect();
 
         Ok(ExtractedTerms {
-            termdag,
+            dag,
             terms: extracted_roots,
         })
     }
@@ -929,7 +1154,7 @@ impl EGraph {
     ) -> Result<ExtractedTermVariants<C>, Error> {
         if nvariants == 0 {
             return Ok(ExtractedTermVariants {
-                termdag: TermDag::default(),
+                dag: ExtractionDag::default(),
                 variants: roots.iter().map(|_| Vec::new()).collect(),
             });
         }
@@ -937,15 +1162,15 @@ impl EGraph {
         let rootsorts = roots.iter().map(|(sort, _)| sort.clone()).collect();
         let extractor =
             TreeExtractor::compute_costs_from_rootsorts(Some(rootsorts), self, cost_model);
-        let mut termdag = TermDag::default();
+        let mut dag = ExtractionDag::default();
         let variants = roots
             .into_iter()
             .map(|(sort, value)| {
-                extractor.extract_variants_with_sort(&mut termdag, value, nvariants, sort)
+                extractor.extract_variants_with_sort(&mut dag, value, nvariants, sort)
             })
             .collect();
 
-        Ok(ExtractedTermVariants { termdag, variants })
+        Ok(ExtractedTermVariants { dag, variants })
     }
 
     /// Extracts the best term for one value using the default additive cost model.
@@ -965,7 +1190,7 @@ impl EGraph {
                     "Unable to find any valid extraction for sort {sort_name}"
                 ))
             })?;
-        Ok((extracted.termdag, root.term, root.cost))
+        Ok((extracted.dag.into_termdag(), root.term(), root.cost))
     }
 
     /// For constructors and relations, the output column can be ignored
@@ -986,7 +1211,7 @@ impl EGraph {
         let extractor =
             TreeExtractor::compute_costs_from_rootsorts(Some(rootsorts), self, DEFAULT_COST_MODEL);
 
-        let mut termdag = TermDag::default();
+        let mut dag = ExtractionDag::default();
         let mut inputs: Vec<TermId> = Vec::new();
         let mut output: Option<Vec<TermId>> = if include_output {
             Some(Vec::new())
@@ -1000,18 +1225,18 @@ impl EGraph {
                 let mut children: Vec<TermId> = Vec::new();
                 for (value, sort) in row.vals.iter().zip(&func.func_type.input) {
                     let term = extractor
-                        .extract_best_with_sort(&mut termdag, *value, sort.clone())
-                        .map(|extracted| extracted.term)
-                        .unwrap_or_else(|| termdag.var("Unextractable".into()));
+                        .extract_best_with_sort(&mut dag, *value, sort.clone())
+                        .map(|extracted| extracted.term())
+                        .unwrap_or_else(|| dag.termdag_mut().var("Unextractable".into()));
                     children.push(term);
                 }
-                inputs.push(termdag.app(sym.to_owned(), children));
+                inputs.push(dag.termdag_mut().app(sym.to_owned(), children));
                 if include_output {
                     let value = row.vals[func.func_type.input.len()];
                     let term = extractor
-                        .extract_best_with_sort(&mut termdag, value, func.func_type.output.clone())
-                        .map(|extracted| extracted.term)
-                        .unwrap_or_else(|| termdag.var("Unextractable".into()));
+                        .extract_best_with_sort(&mut dag, value, func.func_type.output.clone())
+                        .map(|extracted| extracted.term())
+                        .unwrap_or_else(|| dag.termdag_mut().var("Unextractable".into()));
                     output.as_mut().unwrap().push(term);
                 }
                 true
@@ -1022,6 +1247,6 @@ impl EGraph {
 
         self.backend.for_each_while(func.backend_id, extract_row);
 
-        Ok((inputs, output, termdag))
+        Ok((inputs, output, dag.into_termdag()))
     }
 }

@@ -719,7 +719,7 @@ fn tree_cost_model_accepts_custom_enode_annotation() {
     let root = extracted.terms.into_iter().next().unwrap().unwrap();
 
     assert_eq!(root.cost, 5);
-    let extracted_term = extracted.termdag.to_string(root.term);
+    let extracted_term = extracted.dag.termdag().to_string(root.term());
     assert_eq!(extracted_term, "(Pair (Leaf 1) (Leaf 2))");
     let extracted_expr = egraph
         .parser
@@ -743,7 +743,7 @@ fn tree_cost_model_does_not_require_monoid_cost() {
 
     assert_eq!(root.cost, OrderedOnlyCost(5));
     assert_eq!(
-        extracted.termdag.to_string(root.term),
+        extracted.dag.termdag().to_string(root.term()),
         "(Pair (Leaf 1) (Leaf 2))"
     );
 
@@ -789,7 +789,7 @@ fn additive_cost_model_uses_configured_default_node_cost() {
 
     assert_eq!(root.cost, 10);
     assert_eq!(
-        extracted.termdag.to_string(root.term),
+        extracted.dag.termdag().to_string(root.term()),
         "(Pair (Leaf 1) (Leaf 2))"
     );
 
@@ -817,24 +817,27 @@ fn tree_extractor_reuses_costs_for_multiple_values() {
     );
     assert!(calls.get() > 0);
     let prepared_calls = calls.get();
-    let mut termdag = TermDag::default();
+    let mut dag = extract::ExtractionDag::default();
 
     let root = extractor
-        .extract_best_with_sort(&mut termdag, root_value, sort.clone())
+        .extract_best_with_sort(&mut dag, root_value, sort.clone())
         .unwrap();
     let leaf = extractor
-        .extract_best_with_sort(&mut termdag, leaf_value, sort.clone())
+        .extract_best_with_sort(&mut dag, leaf_value, sort.clone())
         .unwrap();
 
-    assert_eq!(termdag.to_string(root.term), "(Pair (Leaf 1) (Leaf 2))");
-    assert_eq!(termdag.to_string(leaf.term), "(Leaf 9)");
+    assert_eq!(
+        dag.termdag().to_string(root.term()),
+        "(Pair (Leaf 1) (Leaf 2))"
+    );
+    assert_eq!(dag.termdag().to_string(leaf.term()), "(Leaf 9)");
     assert_eq!(calls.get(), prepared_calls);
 
     let all_sorts = TreeExtractor::compute_costs_from_rootsorts(None, &egraph, DEFAULT_COST_MODEL);
     let leaf = all_sorts
-        .extract_best_with_sort(&mut termdag, leaf_value, sort)
+        .extract_best_with_sort(&mut dag, leaf_value, sort)
         .unwrap();
-    assert_eq!(termdag.to_string(leaf.term), "(Leaf 9)");
+    assert_eq!(dag.termdag().to_string(leaf.term()), "(Leaf 9)");
 }
 
 #[test]
@@ -873,34 +876,33 @@ fn tree_extractor_supports_reachable_sorts_and_zero_variants() {
         &egraph,
         DEFAULT_COST_MODEL,
     );
-    let mut termdag = TermDag::default();
+    let mut dag = extract::ExtractionDag::default();
 
     let variants =
-        extractor.extract_variants_with_sort(&mut termdag, child_value, 1, child_sort.clone());
-    assert_eq!(termdag.to_string(variants[0].term), "(Leaf 1)");
+        extractor.extract_variants_with_sort(&mut dag, child_value, 1, child_sort.clone());
+    assert_eq!(dag.termdag().to_string(variants[0].term()), "(Leaf 1)");
     assert!(
         extractor
-            .extract_variants_with_sort(&mut termdag, child_value, 0, child_sort)
+            .extract_variants_with_sort(&mut dag, child_value, 0, child_sort)
             .is_empty()
     );
     assert!(
         extractor
-            .extract_variants_with_sort(&mut termdag, primitive_value, 0, primitive_sort.clone())
+            .extract_variants_with_sort(&mut dag, primitive_value, 0, primitive_sort.clone())
             .is_empty()
     );
     assert!(
         extractor
-            .extract_variants_with_sort(&mut termdag, container_value, 0, container_sort.clone())
+            .extract_variants_with_sort(&mut dag, container_value, 0, container_sort.clone())
             .is_empty()
     );
-    let container_variants = extractor.extract_variants_with_sort(
-        &mut termdag,
-        container_value,
-        2,
-        container_sort.clone(),
-    );
+    let container_variants =
+        extractor.extract_variants_with_sort(&mut dag, container_value, 2, container_sort.clone());
     assert_eq!(container_variants.len(), 1);
-    assert_eq!(termdag.to_string(container_variants[0].term), "(vec-of 1)");
+    assert_eq!(
+        dag.termdag().to_string(container_variants[0].term()),
+        "(vec-of 1)"
+    );
 
     let annotated = egraph
         .extract_best_with_cost_model(
@@ -961,7 +963,10 @@ fn extract_best_returns_none_for_unextractable_roots() {
 
     assert_eq!(extracted.terms.len(), 2);
     let visible_root = extracted.terms[0].as_ref().unwrap();
-    assert_eq!(extracted.termdag.to_string(visible_root.term), "(visible)");
+    assert_eq!(
+        extracted.dag.termdag().to_string(visible_root.term()),
+        "(visible)"
+    );
     assert!(extracted.terms[1].is_none());
 }
 

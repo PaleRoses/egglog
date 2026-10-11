@@ -240,20 +240,23 @@ impl Sort for FunctionSort {
         Some(TypeId::of::<FunctionContainer>())
     }
 
-    fn reconstruct_termdag_container(
+    fn reconstruct_container(
         &self,
         container_values: &ContainerValues,
         value: Value,
-        termdag: &mut TermDag,
-        mut element_terms: Vec<TermId>,
-    ) -> TermId {
+        dag: &mut ExtractionDag,
+        element_terms: Vec<OriginId>,
+    ) -> OriginId {
         let name = &container_values
             .get_val::<FunctionContainer>(value)
             .unwrap()
             .2;
-        let head = termdag.lit(Literal::String(name.clone()));
-        element_terms.insert(0, head);
-        termdag.app("unstable-fn".to_owned(), element_terms)
+        let head = dag.termdag_mut().lit(Literal::String(name.clone()));
+        let head = dag.spelled(head);
+        dag.app(
+            "unstable-fn".to_owned(),
+            std::iter::once(head).chain(element_terms).collect(),
+        )
     }
 }
 

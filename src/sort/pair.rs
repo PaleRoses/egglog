@@ -174,15 +174,15 @@ impl ContainerSort for PairSort {
         add_primitive_with_validator!(eg, "pair-second" = |xs: @PairContainer (arc)| -> # (self.second()) { xs.second }, pair_second_validator);
     }
 
-    fn reconstruct_termdag(
+    fn reconstruct(
         &self,
         _container_values: &ContainerValues,
         _value: Value,
-        termdag: &mut TermDag,
-        element_terms: Vec<TermId>,
-    ) -> TermId {
+        dag: &mut ExtractionDag,
+        element_terms: Vec<OriginId>,
+    ) -> OriginId {
         assert_eq!(element_terms.len(), 2);
-        termdag.app("pair".into(), vec![element_terms[0], element_terms[1]])
+        dag.app("pair".into(), element_terms)
     }
 
     fn rebuild_container_normalizer(&self) -> Option<(String, PrimitiveValidator)> {

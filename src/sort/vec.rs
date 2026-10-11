@@ -45,14 +45,19 @@ fn vec_term_children(termdag: &TermDag, term: TermId) -> Option<Vec<TermId>> {
     }
 }
 
+/// The canonical constructor choice is independent of child annotations.
+fn vec_term_head<T>(children: &[T]) -> &'static str {
+    if children.is_empty() {
+        "vec-empty"
+    } else {
+        "vec-of"
+    }
+}
+
 /// Intern the canonical vec term for `children`: `(vec-of e0 ...)`, or
 /// `(vec-empty)` when empty. The inverse of [`vec_term_children`].
 fn vec_term(termdag: &mut TermDag, children: Vec<TermId>) -> TermId {
-    if children.is_empty() {
-        termdag.app("vec-empty".into(), vec![])
-    } else {
-        termdag.app("vec-of".into(), children)
-    }
+    termdag.app(vec_term_head(&children).into(), children)
 }
 
 impl Presort for VecSort {
@@ -229,14 +234,14 @@ impl ContainerSort for VecSort {
         }
     }
 
-    fn reconstruct_termdag(
+    fn reconstruct(
         &self,
         _container_values: &ContainerValues,
         _value: Value,
-        termdag: &mut TermDag,
-        element_terms: Vec<TermId>,
-    ) -> TermId {
-        vec_term(termdag, element_terms)
+        dag: &mut ExtractionDag,
+        element_terms: Vec<OriginId>,
+    ) -> OriginId {
+        dag.app(vec_term_head(&element_terms).into(), element_terms)
     }
 
     fn rebuild_container_normalizer(&self) -> Option<(String, PrimitiveValidator)> {

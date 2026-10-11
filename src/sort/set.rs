@@ -42,9 +42,22 @@ fn set_term_args(set: BTreeSet<OrdTerm<'_>>) -> Vec<TermId> {
 
 /// Canonicalize `elements` to the `(set-of e0 e1 ...)` term form: sorted by
 /// [`TermDag::ast_cmp`] and deduplicated, so proof checking can reproduce it.
+fn normalize_set_elements<T: Copy>(
+    termdag: &TermDag,
+    elements: &[T],
+    term: impl Fn(T) -> TermId,
+) -> Vec<T> {
+    elements
+        .iter()
+        .map(|element| OrderedTerm::new(termdag, term(*element), *element))
+        .collect::<BTreeSet<_>>()
+        .into_iter()
+        .map(|element| element.payload)
+        .collect()
+}
+
 fn normalize_set_term(termdag: &mut TermDag, elements: &[TermId]) -> TermId {
-    let set: BTreeSet<_> = elements.iter().map(|e| termdag.ord_term(*e)).collect();
-    let elements = set_term_args(set);
+    let elements = normalize_set_elements(termdag, elements, std::convert::identity);
     termdag.app("set-of".into(), elements)
 }
 
@@ -244,16 +257,17 @@ impl ContainerSort for SetSort {
         add_primitive_with_validator!(eg, "set-intersect"  = |mut xs: @SetContainer (arc), ys: @SetContainer (arc)| -> @SetContainer (arc) {{ xs.data.retain(|k|  ys.data.contains(k)); xs }}, set_intersect_validator);
     }
 
-    fn reconstruct_termdag(
+    fn reconstruct(
         &self,
         _container_values: &ContainerValues,
         _value: Value,
-        termdag: &mut TermDag,
-        element_terms: Vec<TermId>,
-    ) -> TermId {
+        dag: &mut ExtractionDag,
+        element_terms: Vec<OriginId>,
+    ) -> OriginId {
         // Canonical form (sorted by deterministic AST order, deduped) so proof
         // checking can reproduce it from terms alone.
-        normalize_set_term(termdag, &element_terms)
+        let elements = normalize_set_elements(dag.termdag(), &element_terms, OriginId::term);
+        dag.app("set-of".into(), elements)
     }
 
     fn rebuild_container_normalizer(&self) -> Option<(String, PrimitiveValidator)> {

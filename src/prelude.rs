@@ -906,13 +906,13 @@ pub trait ContainerSort: Any + Send + Sync + Debug {
     fn inner_sorts(&self) -> Vec<ArcSort>;
     fn inner_values(&self, _: &ContainerValues, _: Value) -> Vec<(ArcSort, Value)>;
     fn register_primitives(&self, _eg: &mut EGraph) {}
-    fn reconstruct_termdag(
+    fn reconstruct(
         &self,
         _: &ContainerValues,
         _: Value,
-        _: &mut TermDag,
-        _: Vec<TermId>,
-    ) -> TermId;
+        _: &mut crate::extract::ExtractionDag,
+        _: Vec<crate::extract::OriginId>,
+    ) -> crate::extract::OriginId;
     fn serialized_name(&self, container_values: &ContainerValues, value: Value) -> String;
 
     /// Optional: a container that supports proofs returns its canonical
@@ -983,15 +983,15 @@ impl<T: ContainerSort> Sort for ContainerSortImpl<T> {
         self.0.register_primitives(eg);
     }
 
-    fn reconstruct_termdag_container(
+    fn reconstruct_container(
         &self,
         container_values: &ContainerValues,
         value: Value,
-        termdag: &mut TermDag,
-        element_terms: Vec<TermId>,
-    ) -> TermId {
+        dag: &mut crate::extract::ExtractionDag,
+        element_terms: Vec<crate::extract::OriginId>,
+    ) -> crate::extract::OriginId {
         self.0
-            .reconstruct_termdag(container_values, value, termdag, element_terms)
+            .reconstruct(container_values, value, dag, element_terms)
     }
 
     fn rebuild_container_normalizer(&self) -> Option<(String, PrimitiveValidator)> {

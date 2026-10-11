@@ -12,7 +12,43 @@ pub use core_relations::{
 };
 pub use egglog_bridge::ColumnTy;
 
+use crate::extract::{ExtractionDag, OriginId};
 use crate::*;
+
+/// An ordered term carrying opaque occurrence data. Ordering deliberately
+/// ignores the payload, so native collections retain their own equality and
+/// representative-selection semantics while transporting extraction origins.
+#[derive(Clone, Copy)]
+struct OrderedTerm<'a, T> {
+    term: OrdTerm<'a>,
+    payload: T,
+}
+
+impl<'a, T> OrderedTerm<'a, T> {
+    fn new(termdag: &'a TermDag, term: TermId, payload: T) -> Self {
+        Self {
+            term: termdag.ord_term(term),
+            payload,
+        }
+    }
+}
+
+impl<T> PartialEq for OrderedTerm<'_, T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.term == other.term
+    }
+}
+impl<T> Eq for OrderedTerm<'_, T> {}
+impl<T> PartialOrd for OrderedTerm<'_, T> {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+impl<T> Ord for OrderedTerm<'_, T> {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.term.cmp(&other.term)
+    }
+}
 
 pub type Z = core_relations::Boxed<BigInt>;
 pub type Q = core_relations::Boxed<BigRational>;
@@ -122,19 +158,21 @@ pub trait Sort: Any + Send + Sync + Debug {
         let _ = eg;
     }
 
-    /// Reconstruct a container value in a TermDag
-    fn reconstruct_termdag_container(
+    /// Reconstruct a container spelling and transport the supplied occurrence
+    /// identities through native normalization. Synthetic children must also
+    /// be represented in the returned origin graph.
+    fn reconstruct_container(
         &self,
         container_values: &ContainerValues,
         value: Value,
-        termdag: &mut TermDag,
-        element_terms: Vec<TermId>,
-    ) -> TermId {
+        dag: &mut ExtractionDag,
+        element_terms: Vec<OriginId>,
+    ) -> OriginId {
         let _container_values = container_values;
         let _value = value;
-        let _termdag = termdag;
+        let _dag = dag;
         let _element_terms = element_terms;
-        todo!("reconstruct_termdag_container: {}", self.name());
+        todo!("reconstruct_container: {}", self.name());
     }
 
     /// Reconstruct a leaf primitive value in a TermDag

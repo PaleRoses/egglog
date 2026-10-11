@@ -1787,14 +1787,14 @@ impl EGraph {
                         .next()
                         .expect("extract_variants returns one result for one root")
                         .into_iter()
-                        .map(|extracted| extracted.term)
+                        .map(|extracted| extracted.term())
                         .collect();
                     if log_enabled!(Level::Info) {
                         let expr_str = expr.to_string();
                         log::info!("extracted {} variants for {expr_str}", terms.len());
                     }
                     Ok(vec![CommandOutput::ExtractVariants(
-                        extracted.termdag,
+                        extracted.dag.into_termdag(),
                         terms,
                     )])
                 };
@@ -1887,7 +1887,7 @@ impl EGraph {
                                 .to_string(),
                         )
                     })?;
-                    writeln!(f, "{}", extracted.termdag.to_string(root.term))
+                    writeln!(f, "{}", extracted.dag.termdag().to_string(root.term()))
                         .map_err(|e| Error::IoError(filename.clone(), e, span.clone()))?;
                 }
 
@@ -2412,24 +2412,20 @@ impl EGraph {
         sort.reconstruct_termdag_base(self.backend.base_values(), value, termdag)
     }
 
-    /// Reconstructs a container-sort value from its extracted element terms.
+    /// Reconstructs a container-sort spelling from its extracted child origins.
     ///
     /// `sort` and `value` must identify a container in this e-graph, and
     /// `element_terms` must correspond to [`EGraph::container_inner_values`] in
-    /// the same order.
+    /// the same order. Native normalization transports those origins along
+    /// with their actual spellings, retaining permutation and coalescence.
     pub fn reconstruct_container_value(
         &self,
         sort: &ArcSort,
         value: Value,
-        termdag: &mut TermDag,
-        element_terms: Vec<TermId>,
-    ) -> TermId {
-        sort.reconstruct_termdag_container(
-            self.backend.container_values(),
-            value,
-            termdag,
-            element_terms,
-        )
+        dag: &mut extract::ExtractionDag,
+        element_terms: Vec<extract::OriginId>,
+    ) -> extract::OriginId {
+        sort.reconstruct_container(self.backend.container_values(), value, dag, element_terms)
     }
 
     /// Returns `true` if a user-defined command with the given name is

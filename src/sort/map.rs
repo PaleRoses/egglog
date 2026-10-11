@@ -44,25 +44,23 @@ fn map_term_to_btreemap<'a>(
     term_id: TermId,
 ) -> Option<BTreeMap<OrdTerm<'a>, TermId>> {
     match termdag.get(term_id) {
-        Term::App(head, args) if head == "map-of" => map_of_args_to_btreemap(termdag, args),
+        Term::App(head, args) if head == "map-of" => {
+            map_of_args_to_btreemap(args, |term| termdag.ord_term(term))
+        }
         _ => None,
     }
 }
 
 /// Alternating `[k0, v0, ...]` `map-of` arguments as a `BTreeMap` (see
 /// [`map_term_to_btreemap`]); `None` on odd arity.
-fn map_of_args_to_btreemap<'a>(
-    termdag: &'a TermDag,
-    args: &[TermId],
-) -> Option<BTreeMap<OrdTerm<'a>, TermId>> {
+fn map_of_args_to_btreemap<K: Ord, T: Copy>(
+    args: &[T],
+    key: impl Fn(T) -> K,
+) -> Option<BTreeMap<K, T>> {
     if !args.len().is_multiple_of(2) {
         return None;
     }
-    Some(
-        args.chunks_exact(2)
-            .map(|kv| (termdag.ord_term(kv[0]), kv[1]))
-            .collect(),
-    )
+    Some(args.chunks_exact(2).map(|kv| (key(kv[0]), kv[1])).collect())
 }
 
 /// Flatten a map back to the `[k0, v0, k1, v1, ...]` argument list of its
@@ -74,7 +72,9 @@ fn map_term_args(map: BTreeMap<OrdTerm<'_>, TermId>) -> Vec<TermId> {
 /// Canonicalize alternating `[k0, v0, ...]` arguments to the flat
 /// `(map-of ...)` term; `None` on odd arity.
 fn normalize_map_term(termdag: &mut TermDag, args: &[TermId]) -> Option<TermId> {
-    let flat = map_term_args(map_of_args_to_btreemap(termdag, args)?);
+    let flat = map_term_args(map_of_args_to_btreemap(args, |term| {
+        termdag.ord_term(term)
+    })?);
     Some(termdag.app("map-of".to_string(), flat))
 }
 
@@ -257,17 +257,24 @@ impl ContainerSort for MapSort {
         add_primitive_with_validator!(eg, "map-not-contains" = |xs: @MapContainer (arc), x: # (self.key())| -?> () { (!xs.data.contains_key(&x)).then_some(()) }, map_not_contains_validator);
     }
 
-    fn reconstruct_termdag(
+    fn reconstruct(
         &self,
         _container_values: &ContainerValues,
         _value: Value,
-        termdag: &mut TermDag,
-        element_terms: Vec<TermId>,
-    ) -> TermId {
+        dag: &mut ExtractionDag,
+        element_terms: Vec<OriginId>,
+    ) -> OriginId {
         // Flat `(map-of k0 v0 k1 v1 ...)` in canonical key order, so proof
         // checking can reproduce it from terms alone (and the rebuild proof's
         // Congr indices are flat, like `set-of`/`vec-of`).
-        normalize_map_term(termdag, &element_terms).expect("map elements come in key/value pairs")
+        let elements = map_of_args_to_btreemap(&element_terms, |origin| {
+            OrderedTerm::new(dag.termdag(), origin.term(), origin)
+        })
+        .expect("map elements come in key/value pairs")
+        .into_iter()
+        .flat_map(|(key, value)| [key.payload, value])
+        .collect();
+        dag.app("map-of".into(), elements)
     }
 
     fn rebuild_container_normalizer(&self) -> Option<(String, PrimitiveValidator)> {

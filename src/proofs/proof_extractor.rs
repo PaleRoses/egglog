@@ -73,17 +73,21 @@ impl RootExtractor {
         value: Value,
         sort: &ArcSort,
     ) -> Option<TermId> {
-        let elements = sort.inner_values(egraph.backend.container_values(), value);
-        let mut ch_terms = Vec::with_capacity(elements.len());
-        for (sort, value) in elements {
-            ch_terms.push(self.extract(egraph, termdag, value, &sort)?);
-        }
-        Some(sort.reconstruct_termdag_container(
+        let children = sort
+            .inner_values(egraph.backend.container_values(), value)
+            .into_iter()
+            .map(|(sort, value)| self.extract(egraph, termdag, value, &sort))
+            .collect::<Option<Vec<_>>>()?;
+        let mut dag = crate::extract::ExtractionDag::from_termdag(std::mem::take(termdag));
+        let children = children.into_iter().map(|term| dag.spelled(term)).collect();
+        let origin = sort.reconstruct_container(
             egraph.backend.container_values(),
             value,
-            termdag,
-            ch_terms,
-        ))
+            &mut dag,
+            children,
+        );
+        *termdag = dag.into_termdag();
+        Some(origin.term())
     }
 
     fn extract_eq(
