@@ -92,6 +92,10 @@ define_id!(pub(crate) MatId, u32, "An identifier for materialization within a de
 pub(crate) enum MatScanMode {
     Full,
     KeyOnly,
+    /// Like `KeyOnly`, but stages before it may bind some of `bind`: it yields
+    /// the keys matching them, and tests membership once all are bound.
+    /// `to_intersect` holds every atom with a variable of `bind`.
+    Semijoin,
     Value(SmallVec<[Variable; 16]>),
     Lookup(SmallVec<[Variable; 16]>),
 }
@@ -358,10 +362,21 @@ pub(crate) struct MatSpec {
     pub val_vars: SmallVec<[Variable; 16]>,
 }
 
+/// The distinct `key` columns of materialization `source`'s keys, stored as
+/// materialization `target`.
+#[derive(Debug, Clone)]
+pub(crate) struct MatProjection {
+    pub source: MatId,
+    pub target: MatId,
+    pub key: SmallVec<[ColumnId; 4]>,
+}
+
 #[derive(Debug, Clone)]
 pub(crate) struct JoinStageBlocks {
     // each block is a list of instructions and how to yield
     pub blocks: Vec<(JoinStages, MatSpec)>,
+    /// Built when their source block is materialized, before the next block runs.
+    pub projections: Vec<MatProjection>,
 }
 
 #[derive(Debug, Clone)]
@@ -990,6 +1005,8 @@ fn plan_single_bag(
     // If this bag has been used to prune its parent
     has_block_contributed: &mut [bool],
     n_used_in_bag: &mut DenseIdMap<Variable, usize>,
+    first_projection: usize,
+    projections: &mut Vec<MatProjection>,
     strat: PlanStrategy,
 ) -> (Vec<JoinHeader>, JoinStages, MatSpec) {
     let mut msg_vars = smallvec![];
@@ -1020,9 +1037,10 @@ fn plan_single_bag(
     let mut stripped_bag = bag.clone();
 
     // Add prologue and epilogue instructions to look up previous materialized bags
-    // These are constraints from children blocks. If there's only one such block, it can be the header.
-    // Otherwise, they have to be epilogue instructions doing filtering at the end, which is less efficient.
+    // These are constraints from children blocks. The first such block is the prologue; a later
+    // one becomes a `Semijoin` stage that DVO places among the bag's own, a lookup, or both.
     let mut prologue = None;
+    let mut semijoins = Vec::new();
     let mut epilogue = Vec::new();
     for (i, prev_block) in blocks.iter().enumerate().rev() {
         if prev_block.1.msg_vars.is_empty() {
@@ -1047,6 +1065,29 @@ fn plan_single_bag(
                     .vars
                     .retain(|var, _vinfo| !prev_block.1.msg_vars.contains(&var));
             } else {
+                // A `Semijoin` stage binds the message's variables the prologue left free, from
+                // the message or, when the prologue binds part of it, from its projection onto
+                // them. The projection loses their correlation, so a lookup checks the message.
+                let (source, msg) = (MatId::from_usize(i), &prev_block.1.msg_vars);
+                let (key, free): (SmallVec<[ColumnId; 4]>, SmallVec<[Variable; 4]>) = msg
+                    .iter()
+                    .enumerate()
+                    .filter(|(_, var)| stripped_bag.vars.contains_key(**var))
+                    .map(|(col, var)| (ColumnId::from_usize(col), *var))
+                    .unzip();
+                if free.len() == msg.len() {
+                    semijoins.push(mat_stage(bag, source, MatScanMode::Semijoin, &free));
+                    continue;
+                }
+                if !free.is_empty() {
+                    let target = MatId::from_usize(first_projection + projections.len());
+                    projections.push(MatProjection {
+                        source,
+                        target,
+                        key,
+                    });
+                    semijoins.push(mat_stage(bag, target, MatScanMode::Semijoin, &free));
+                }
                 epilogue.push(JoinStage::FusedIntersectMat {
                     cover: MatId::from_usize(i),
                     mode: MatScanMode::Lookup(prev_block.1.msg_vars.clone()),
@@ -1058,7 +1099,7 @@ fn plan_single_bag(
     }
 
     let (header, mut instrs) = plan_stages(&stripped_bag, strat);
-    instrs.splice(0..0, prologue);
+    instrs.splice(0..0, prologue.into_iter().chain(semijoins));
     instrs.extend(epilogue);
 
     let stages = JoinStages::new(instrs);
@@ -1231,12 +1272,16 @@ pub(crate) fn tree_decompose_and_plan(
     // Step 4: Plan each bag and create materialization blocks
     let mut blocks = Vec::new();
     let mut header = vec![];
+    let mut projections = vec![];
+    let first_projection = bags.len();
     for bag in bags.iter_mut() {
         let (bag_header, stages, mat_spec) = plan_single_bag(
             bag,
             &blocks,
             &mut has_block_contributed,
             &mut n_used_in_bag,
+            first_projection,
+            &mut projections,
             strat,
         );
         blocks.push((stages, mat_spec));
@@ -1259,7 +1304,10 @@ pub(crate) fn tree_decompose_and_plan(
     Plan::DecomposedPlan(DecomposedPlan {
         atoms: Arc::new(ctx.atoms),
         header,
-        stages: JoinStageBlocks { blocks },
+        stages: JoinStageBlocks {
+            blocks,
+            projections,
+        },
         result_block,
         actions,
     })

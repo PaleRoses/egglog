@@ -378,6 +378,21 @@ pub(super) fn estimate_size(join_stage: &JoinStage, binding_info: &BindingInfo<'
     }
 }
 
+/// Whether a stage before `position` in `order` binds `var`.
+pub(super) fn bound_before(
+    order: &InstrOrder,
+    instrs: &[JoinStage],
+    position: usize,
+    var: Variable,
+) -> bool {
+    (0..position).any(|position| match &instrs[order.get(position)] {
+        JoinStage::Intersect { var: bound, .. } => *bound == var,
+        JoinStage::FusedIntersect { bind, .. } | JoinStage::FusedIntersectMat { bind, .. } => {
+            bind.iter().any(|(_, bound)| *bound == var)
+        }
+    })
+}
+
 fn num_intersected_rels(join_stage: &JoinStage) -> i32 {
     match join_stage {
         JoinStage::Intersect { scans, .. } => scans.len() as i32,
@@ -434,7 +449,7 @@ pub(super) fn sort_plan_by_size(
 /// `FusedIntersect` or `FusedIntersectMat { mode: Full | KeyOnly | Value }`,
 /// has an empty `to_intersect`, and no later stage either (a) references the
 /// same cover atom for `FusedIntersect`, or (b) reads one of its bound variables
-/// as a scalar through `FusedIntersectMat { mode: Value | Lookup }`.
+/// as a scalar through `FusedIntersectMat { mode: Value | Lookup | Semijoin }`.
 /// `FusedIntersectMat::Lookup` binds nothing itself and is never a leaf scan.
 pub(super) fn recompute_leaf_scans(
     order: &InstrOrder,
@@ -497,7 +512,10 @@ pub(super) fn recompute_leaf_scans(
                     }
                 }
                 JoinStage::FusedIntersectMat {
-                    mode, to_intersect, ..
+                    mode,
+                    bind,
+                    to_intersect,
+                    ..
                 } => {
                     if let Some(ca) = cover_atom
                         && to_intersect.iter().any(|(s, _)| s.to_index.atom == ca)
@@ -507,6 +525,12 @@ pub(super) fn recompute_leaf_scans(
                     }
                     if let MatScanMode::Value(vars) | MatScanMode::Lookup(vars) = mode
                         && vars.iter().any(|v| bind_vars.contains(v))
+                    {
+                        blocked = true;
+                        break;
+                    }
+                    if *mode == MatScanMode::Semijoin
+                        && bind.iter().any(|(_, v)| bind_vars.contains(v))
                     {
                         blocked = true;
                         break;
@@ -547,6 +571,12 @@ pub(super) fn sort_plan_by_size_inner(
                         spec.to_index.vars.len() as i64;
                 });
             }
+            // A stage of the bag also binds each of a `Semijoin`'s variables and
+            // counts the atoms holding it.
+            JoinStage::FusedIntersectMat {
+                mode: MatScanMode::Semijoin,
+                ..
+            } => {}
             JoinStage::FusedIntersectMat { to_intersect, .. } => {
                 to_intersect.iter().for_each(|(spec, _)| {
                     *refinements.get_or_default(spec.to_index.atom) +=
@@ -570,9 +600,13 @@ pub(super) fn sort_plan_by_size_inner(
     // Estimate size is second so that very small inputs (e.g. FunDep
     // consequents with exactly one value) run before multi-relation stages
     // that happen to have a larger current estimate.
+    //
+    // A `Semijoin` ranks by how many of its variables the stages before
+    // `position` bind, and is a size-1 lookup once all are.
     let key_fn = |join_stage: &JoinStage,
-                  binding_info: &BindingInfo<'_, '_>,
-                  refinements: &DenseIdMap<AtomId, i64>| {
+                  refinements: &DenseIdMap<AtomId, i64>,
+                  order: &InstrOrder,
+                  position: usize| {
         let refine = match join_stage {
             JoinStage::Intersect { scans, .. } => scans
                 .iter()
@@ -583,6 +617,16 @@ pub(super) fn sort_plan_by_size_inner(
                 .get(cover.to_index.atom)
                 .copied()
                 .unwrap_or_default(),
+            JoinStage::FusedIntersectMat { mode, bind, .. } if *mode == MatScanMode::Semijoin => {
+                let refine = bind
+                    .iter()
+                    .filter(|(_, var)| bound_before(order, instrs, position, *var))
+                    .count();
+                if refine == bind.len() {
+                    return (-(refine as i64), 1, -num_intersected_rels(join_stage));
+                }
+                refine as _
+            }
             JoinStage::FusedIntersectMat { bind, .. } => bind.len() as _,
         };
         (
@@ -593,9 +637,9 @@ pub(super) fn sort_plan_by_size_inner(
     };
 
     for i in range.clone() {
-        let mut key_i = key_fn(&instrs[order.get(i)], binding_info, &times_refined);
+        let mut key_i = key_fn(&instrs[order.get(i)], &times_refined, order, i);
         for j in (i + 1)..range.end {
-            let key_j = key_fn(&instrs[order.get(j)], binding_info, &times_refined);
+            let key_j = key_fn(&instrs[order.get(j)], &times_refined, order, i);
             if key_j < key_i {
                 order.data.swap(i, j);
                 key_i = key_j;

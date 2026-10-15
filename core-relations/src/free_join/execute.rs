@@ -44,12 +44,12 @@ use super::{
     frame_update::{FrameUpdates, UpdateInstr},
     join_tail::{
         BindingInfo, BindingSet, BorrowedLocalState, InstrOrder, LeafScans, LocalState,
-        MatchCounter, RetiredLocalStates, SubsetClonePlan, atom_tail_use, estimate_size,
-        materialization_is_live_in_tail, sort_plan_by_size,
+        MatchCounter, RetiredLocalStates, SubsetClonePlan, atom_tail_use, bound_before,
+        estimate_size, materialization_is_live_in_tail, sort_plan_by_size,
     },
     packed_cache::{OwnedAtomRows, TrieCache},
     packed_trie::{ChildShape, TrieNode},
-    plan::{JoinHeader, JoinStage, JoinStages, MatId, MatScanMode, MatSpec, Plan},
+    plan::{JoinHeader, JoinStage, JoinStageBlocks, JoinStages, MatId, MatScanMode, MatSpec, Plan},
     prepared_index::{
         PreparedIndexRef, PreparedJoinIndexes, PreparedPlanIndexes, StageMask,
         columns_are_cacheable,
@@ -342,6 +342,11 @@ impl Database {
                                             binding_info
                                                 .materializations
                                                 .insert(mat_id, Arc::new(materialization));
+                                            run_projections(
+                                                &plan.stages,
+                                                mat_id,
+                                                &mut binding_info,
+                                            );
                                             materializations = Arc::new(materializations_dearc);
                                         }
                                         join_state.run_join_stages(
@@ -479,6 +484,7 @@ impl Database {
                                             materializer.materializations.take(mat_id).unwrap(),
                                         ),
                                     );
+                                    run_projections(&plan.stages, mat_id, &mut binding_info);
                                 }
                                 join_state.run_join_stages(
                                     &plan.result_block,
@@ -2148,7 +2154,9 @@ impl<'a, 'state, 'exec> JoinState<'a, 'state, 'exec> {
                                 }
                             }
                         }
-                        MatScanMode::Lookup(_) => unreachable!("guarded above"),
+                        MatScanMode::Lookup(_) | MatScanMode::Semijoin => {
+                            unreachable!("guarded above")
+                        }
                     }
                     if buf.is_empty() {
                         return;
@@ -2170,6 +2178,24 @@ impl<'a, 'state, 'exec> JoinState<'a, 'state, 'exec> {
                 bind,
                 to_intersect,
             } => {
+                // The stages that bound all of a `Semijoin`'s variables refined every
+                // atom holding them, so only membership is left to check.
+                if *mode == MatScanMode::Semijoin
+                    && let Some(key) = bind
+                        .iter()
+                        .map(|(_, var)| {
+                            bound_before(instr_order, &stages.instrs, cur, *var)
+                                .then(|| binding_info.bindings[*var])
+                        })
+                        .collect::<Option<SmallVec<[Value; 4]>>>()
+                {
+                    if binding_info.materializations[*cover].contains_key(key.as_slice()) {
+                        let mut updates = FrameUpdates::with_capacity(1);
+                        updates.finish_frame();
+                        drain_updates!(updates);
+                    }
+                    return;
+                }
                 let keep_for_tail =
                     materialization_is_live_in_tail(&stages.instrs, instr_order, cur + 1, *cover);
                 let restore_materialization = !keep_for_tail;
@@ -2284,6 +2310,23 @@ impl<'a, 'state, 'exec> JoinState<'a, 'state, 'exec> {
                                     } else {
                                         updates.rollback();
                                     }
+                                }
+                            }
+                        }
+                        MatScanMode::Semijoin => {
+                            // An atom holding a variable already bound rejects the keys
+                            // that disagree with it.
+                            for group_key in cover_mat.keys() {
+                                for (col, var) in bind.iter() {
+                                    updates.push_binding(*var, group_key[col.index()]);
+                                }
+                                if prune_probers(&mut updates, Some(group_key), None) {
+                                    updates.finish_frame();
+                                } else {
+                                    updates.rollback();
+                                }
+                                if updates.frames() >= chunk_size {
+                                    drain_updates!(updates);
                                 }
                             }
                         }
@@ -2844,6 +2887,22 @@ fn flush_action_states(
             match_counter.inc_matches(action, succeeded);
             *len = 0;
         }
+    }
+}
+
+/// Stores each projection of materialization `source`: the distinct `key`
+/// columns of its keys, with no rows.
+fn run_projections(blocks: &JoinStageBlocks, source: MatId, binding_info: &mut BindingInfo) {
+    let materializations = &mut binding_info.materializations;
+    for projection in blocks.projections.iter().filter(|p| p.source == source) {
+        let projected: IndexMap<Vec<Value>, RowBuffer> = materializations[source]
+            .keys()
+            .map(|full| {
+                let key = projection.key.iter().map(|col| full[col.index()]).collect();
+                (key, RowBuffer::new(1))
+            })
+            .collect();
+        materializations.insert(projection.target, Arc::new(projected));
     }
 }
 
