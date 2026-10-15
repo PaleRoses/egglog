@@ -9,12 +9,12 @@ use egglog_reports::ReportLevel;
 use crate::numeric_id::NumericId;
 
 use crate::{
-    PlanStrategy, Subset,
+    PlanStrategy, QueryEntry, Subset,
     action::WriteVal,
     common::Value,
     free_join::{
         CounterId, Database, TableId,
-        plan::{JoinStage, Plan},
+        plan::{JoinStage, MatScanMode, Plan},
     },
     make_external_func,
     query::RuleSetBuilder,
@@ -2292,6 +2292,125 @@ fn gj_decomposed_small_top_materialization_uses_local_queue() {
             assert_eq!(row[2].index(), 20_000 + x * LEFT_ROWS_PER_KEY + i);
             assert_eq!(row[3].index(), 100_000 + x);
             assert_eq!(row[4].index(), 200_000 + x);
+        }
+    });
+}
+
+#[test]
+fn gj_decomposed_semijoins_match_the_single_plan() {
+    // A hexagon a-x-r-t-s-y with a triangle a-b-c on a. The bag {x, y, t} binds (x, t) and scans
+    // the path y-s-t's message projected onto y, then looks it up. The four-cycle a-x-t-y with the
+    // same triangle has no paths, so no earlier message carries t and its bag {x, y, t} keeps no
+    // values to read back: only the root's semijoin on that bag's message keeps (x, y) to pairs
+    // sharing a t. With 2 (x, y) keys under 128 neighbours of each a, the root's semijoin binds y
+    // from the keys once an atom binds x; with 1,600 keys under 13 neighbours, the atoms bind both
+    // and it checks the pair.
+    run_serial_and_parallel(|| {
+        for (hubs, per_hub, values, fan_out, a_values) in
+            [(2, 1, 128, 128, 64), (4, 20, 80, 13, 400)]
+        {
+            let mut db = Database::default();
+            let [xr, ab, bc, ca, ys, rt, st, ax, ay, xt, yt] =
+                [(); 11].map(|_| add_set_table(&mut db, 2));
+            let [output, single_output, cycle_output, cycle_single_output] =
+                [(); 4].map(|_| add_set_table(&mut db, 5));
+            // Plan while the tables are empty, so the decomposition depends on the rule alone.
+            let mut rsb = RuleSetBuilder::new(&mut db);
+            let mut add_rule = |four_cycle: bool, output, no_decomp, desc: &str| {
+                let mut query = rsb.new_rule();
+                query.set_plan_strategy(PlanStrategy::Gj);
+                query.set_no_decomp(no_decomp);
+                let (tables, atoms, [a, b, c, x, y]) = if four_cycle {
+                    let [a, b, x, y, c, t] =
+                        ["a", "b", "x", "y", "c", "t"].map(|name| query.new_var_named(name));
+                    let atoms = vec![x, t, a, b, b, c, c, a, y, t, a, x, a, y];
+                    (vec![xt, ab, bc, ca, yt, ax, ay], atoms, [a, b, c, x, y])
+                } else {
+                    let [a, b, c, x, y, r, s, t] = ["a", "b", "c", "x", "y", "r", "s", "t"]
+                        .map(|name| query.new_var_named(name));
+                    let atoms = vec![x, r, a, b, b, c, c, a, y, s, r, t, s, t, a, x, a, y];
+                    (
+                        vec![xr, ab, bc, ca, ys, rt, st, ax, ay],
+                        atoms,
+                        [a, b, c, x, y],
+                    )
+                };
+                for (table, atom) in tables.into_iter().zip(atoms.chunks(2)) {
+                    query
+                        .add_atom(table, &[atom[0].into(), atom[1].into()], &[])
+                        .unwrap();
+                }
+                let mut rule = query.build();
+                rule.insert(output, &[a, b, c, x, y].map(QueryEntry::from))
+                    .unwrap();
+                (rule.build_with_description(desc), [x, y])
+            };
+            let (hexagon, hexagon_xy) = add_rule(false, output, false, "hexagon");
+            add_rule(false, single_output, true, "hexagon single");
+            let (cycle, cycle_xy) = add_rule(true, cycle_output, false, "four-cycle");
+            add_rule(true, cycle_single_output, true, "four-cycle single");
+            let rules = rsb.build();
+            for (rule, xy, four_cycle) in [(hexagon, hexagon_xy, false), (cycle, cycle_xy, true)] {
+                let Plan::DecomposedPlan(plan) = &rules.plans[rule].0 else {
+                    panic!("the rule must decompose")
+                };
+                let blocks = &plan.stages.blocks;
+                assert!(matches!(
+                    &blocks.last().unwrap().0.instrs[1],
+                    JoinStage::FusedIntersectMat { mode: MatScanMode::Semijoin, bind, .. }
+                        if bind.iter().map(|(_, var)| *var).eq(xy)
+                ));
+                if four_cycle {
+                    let specs: Vec<_> = blocks.iter().map(|(_, spec)| spec).collect();
+                    assert!(
+                        specs
+                            .iter()
+                            .any(|spec| spec.msg_vars.as_slice() == xy && spec.val_vars.is_empty()),
+                        "{specs:?}"
+                    );
+                } else {
+                    assert_eq!(plan.stages.projections.len(), 1);
+                }
+            }
+
+            let (b, c, x, y, r, s, t) =
+                (10_000, 20_000, 100_000, 200_000, 300_000, 400_000, 500_000);
+            let fill = |table, rows: &mut dyn Iterator<Item = [usize; 2]>| {
+                let mut buf = db.new_buffer(table);
+                rows.for_each(|[l, r]| buf.stage_insert(&[v(l), v(r)]));
+            };
+            fill(xr, &mut (0..values).map(|i| [x + i, r + i]));
+            fill(ys, &mut (0..values).map(|i| [y + i, s + i]));
+            for (table, from) in [(rt, r), (st, s), (xt, x), (yt, y)] {
+                let mut rows = (0..hubs * per_hub).map(|i| [from + i, t + i / per_hub]);
+                fill(table, &mut rows);
+            }
+            fill(ab, &mut (0..a_values).map(|a| [a, b + a]));
+            fill(bc, &mut (0..a_values).map(|a| [b + a, c + a]));
+            fill(ca, &mut (0..a_values).map(|a| [c + a, a]));
+            for (table, to, step) in [(ax, x, 7), (ay, y, 11)] {
+                let mut rows = (0..a_values)
+                    .flat_map(|a| (0..fan_out).map(move |i| [a, to + (a * step + i) % values]));
+                fill(table, &mut rows);
+            }
+            db.merge_all();
+            let report = db.run_rule_set(&rules, ReportLevel::TimeOnly, None);
+            for (rule, output, single_output) in [
+                ("hexagon", output, single_output),
+                ("four-cycle", cycle_output, cycle_single_output),
+            ] {
+                assert!(report.num_matches(rule) > 0);
+                let single = report.num_matches(&format!("{rule} single"));
+                assert_eq!(report.num_matches(rule), single);
+                assert_eq!(table_rows(&db, output), table_rows(&db, single_output));
+            }
+
+            let mut rsb = RuleSetBuilder::new(&mut db);
+            rsb.add_rule_from_cached_plan(&rules.build_cached_plan(hexagon), &[])
+                .unwrap();
+            let rerun = rsb.build();
+            let rerun = db.run_rule_set(&rerun, ReportLevel::TimeOnly, None);
+            assert_eq!(rerun.num_matches("hexagon"), report.num_matches("hexagon"));
         }
     });
 }

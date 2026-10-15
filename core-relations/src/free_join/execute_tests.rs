@@ -20,7 +20,8 @@ use crate::{
 use crate::free_join::{
     join_tail::{
         BindingInfo, InstrOrder, for_each_stage_atom, materialization_is_live_in_tail,
-        packed_child_shape_in_tail, scan_atom_tail_use, sort_plan_by_size_inner, suffix_stage_mask,
+        packed_child_shape_in_tail, recompute_leaf_scans, scan_atom_tail_use,
+        sort_plan_by_size_inner, suffix_stage_mask,
     },
     packed_cache::{FamilyId, OwnedAtomRows},
     packed_trie::ChildShape,
@@ -345,6 +346,85 @@ fn mixed_recursive_dvo_keeps_the_plan_prefix_as_its_refinement_anchor() {
     sort_plan_by_size_inner(&mut order, 1..3, &stages, &mut binding_info);
 
     assert_eq!(order, InstrOrder::from_iter([1, 0, 2, 3].into_iter()));
+}
+
+/// Stage 0 is a semijoin over a 50-key message on x and y (variables 1 and 2)
+/// that probes atoms 1 and 2. Stages 1 to 4 bind x from atom 1, y from atom 2,
+/// z from atom 1 and w from atom 4. Atoms 1 and 4 have 10 rows, atom 2 100.
+fn semijoin_fixture() -> (Vec<JoinStage>, BindingInfo<'static, 'static>) {
+    let (col, var) = (ColumnId::from_usize, Variable::from_usize);
+    let semijoin = JoinStage::FusedIntersectMat {
+        cover: MatId::from_usize(0),
+        mode: MatScanMode::Semijoin,
+        bind: smallvec![(col(0), var(1)), (col(1), var(2))],
+        to_intersect: vec![(scan(1), smallvec![col(0)]), (scan(2), smallvec![col(1)])],
+    };
+    let stages = vec![
+        semijoin,
+        intersect_stage(1, 1),
+        intersect_stage(2, 2),
+        intersect_stage(1, 3),
+        intersect_stage(4, 4),
+    ];
+    let mut binding_info = BindingInfo::default();
+    for (atom, rows) in [(1, 10), (2, 100), (4, 10)] {
+        let rows =
+            crate::OffsetRange::new(crate::RowId::from_usize(0), crate::RowId::from_usize(rows));
+        binding_info.insert_subset(AtomId::from_usize(atom), Subset::Dense(rows));
+    }
+    let message = (0..50).map(|k| (vec![Value::from_usize(k); 2], RowBuffer::new(1)));
+    binding_info
+        .materializations
+        .insert(MatId::from_usize(0), Arc::new(message.collect()));
+    (stages, binding_info)
+}
+
+#[test]
+fn a_semijoin_ranks_by_the_variables_bound_before_it() {
+    let (stages, mut binding_info) = semijoin_fixture();
+    // Unbound, the semijoin scans 50 keys and loses to stage 4's 10 rows. With
+    // x bound it ties stage 3, whose atom stage 1 refined, and loses on size;
+    // priced as a lookup it would win. With x and y bound it is a lookup.
+    for (order, start, first) in [
+        ([0, 4, 1, 2, 3], 0, 4),
+        ([1, 4, 0, 3, 2], 2, 3),
+        ([1, 2, 0, 3, 4], 2, 0),
+    ] {
+        let mut order = InstrOrder::from_iter(order.into_iter());
+        sort_plan_by_size_inner(&mut order, start..start + 2, &stages, &mut binding_info);
+        assert_eq!(order.get(start), first);
+    }
+}
+
+#[test]
+fn a_semijoin_earns_no_refinement() {
+    // The semijoin is in the logical prefix. Crediting it would refine atom 2
+    // and put stage 2 before stage 4, whose atom is smaller.
+    let (stages, mut binding_info) = semijoin_fixture();
+    let mut order = InstrOrder::from_iter([1, 2, 4, 3, 0].into_iter());
+    sort_plan_by_size_inner(&mut order, 1..3, &stages, &mut binding_info);
+    assert_eq!(order.get(1), 4);
+}
+
+#[test]
+fn a_semijoin_blocks_an_earlier_leaf_binding_its_variables() {
+    // Stage 5 scans atom 5 alone and binds y. Before the semijoin, which reads
+    // y as a scalar once it is bound, it is not a leaf; last, it is.
+    let (mut stages, _) = semijoin_fixture();
+    stages.push(JoinStage::FusedIntersect {
+        cover: scan(5),
+        bind: smallvec![(ColumnId::from_usize(0), Variable::from_usize(2))],
+        to_intersect: Vec::new(),
+    });
+    for (order, position, leaf) in [
+        ([5, 0, 1, 2, 3, 4], 0, false),
+        ([0, 1, 2, 3, 4, 5], 5, true),
+    ] {
+        let order = InstrOrder::from_iter(order.into_iter());
+        let mut leaf_scans = smallvec![false; 6];
+        recompute_leaf_scans(&order, &mut leaf_scans, &stages, 0);
+        assert_eq!(leaf_scans[position], leaf);
+    }
 }
 
 fn prepared_for(stages: &[JoinStage]) -> PreparedJoinLayout {
