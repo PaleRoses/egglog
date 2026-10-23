@@ -856,7 +856,7 @@ fn topologically_sort_bags(bags: Vec<PlanningContext>) -> Vec<PlanningContext> {
             let mut chain_score: HashSet<_> =
                 bags[i].atoms.iter().map(|(atom_id, _)| atom_id).collect();
             chain_score.extend(
-                all_children_list[*chain_child]
+                all_children_list[i]
                     .iter()
                     .filter(|child| *child != chain_child)
                     .flat_map(|child| full[*child].iter().copied()),
@@ -925,7 +925,7 @@ fn topologically_sort_bags(bags: Vec<PlanningContext>) -> Vec<PlanningContext> {
                 // chain; the rest (and all their descendants, via the branch above)
                 // are absorbed into this chain node.
                 if !all_children.is_empty() {
-                    for &i in all_children[1..].iter() {
+                    for &i in all_children.iter() {
                         if i == choice[bag_id] {
                             continue;
                         }
