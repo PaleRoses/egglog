@@ -1,5 +1,5 @@
 ; x and y sharing a t through x-r-t and y-s-t. With the triangle a-b-c, the bag binds (y, t) from a
-; message and scans (x, t) as a semijoin with t bound; it and that message's lookup reject other t's
+; message and scans (x, t) as a semijoin with t bound, which rejects other t's
 (relation ab (i64 i64))
 (relation bc (i64 i64))
 (relation ca (i64 i64))
