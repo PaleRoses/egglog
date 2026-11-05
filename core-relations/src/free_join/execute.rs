@@ -2263,8 +2263,47 @@ impl<'a, 'state, 'exec> JoinState<'a, 'state, 'exec> {
                 (|| {
                     let mut updates: FrameUpdates<'rows, 'exec> =
                         FrameUpdates::with_capacity(cmp::min(chunk_size, cur_size));
+                    let (bound, values) = if *mode == MatScanMode::Semijoin {
+                        let scanned = |column: &usize| {
+                            bound_before(instr_order, &stages.instrs, cur, bind[*column].1)
+                        };
+                        let mut bound = SmallVec::<[usize; 16]>::with_capacity(bind.len());
+                        match prepared.tail_masks::<M>().zip(remaining_stages) {
+                            Some((masks, remaining)) => {
+                                bound.extend(masks.semijoin_bound_columns(stage_index, remaining))
+                            }
+                            None => bound.extend((0..bind.len()).filter(scanned)),
+                        }
+                        debug_assert!(
+                            bound.iter().copied().eq((0..bind.len()).filter(scanned)),
+                            "prepared semijoin binders diverged from the stage scanner"
+                        );
+                        let values: SmallVec<[Value; 16]> = bound
+                            .iter()
+                            .map(|&column| binding_info.bindings[bind[column].1])
+                            .collect();
+                        (bound, values)
+                    } else {
+                        Default::default()
+                    };
+                    // Fully bound with no later stage keeping its atoms, a semijoin is a
+                    // membership probe of its message and refines nothing.
+                    let probe_only = *mode == MatScanMode::Semijoin
+                        && bound.len() == bind.len()
+                        && to_intersect.iter().all(|(spec, _)| {
+                            !atom_tail_use(
+                                spec.to_index.atom,
+                                &stages.instrs,
+                                prepared,
+                                remaining_after_current,
+                                instr_order,
+                                cur + 1,
+                            )
+                            .keep_rows
+                        });
                     let probers: SmallVec<[Prober<'_, 'rows, 'exec>; 4]> = to_intersect
                         .iter()
+                        .filter(|_| !probe_only)
                         .zip(prepared_indexes)
                         .map(|((spec, _), prepared_slot)| {
                             let tail = atom_tail_use(
@@ -2376,28 +2415,13 @@ impl<'a, 'state, 'exec> JoinState<'a, 'state, 'exec> {
                             }
                         }
                         MatScanMode::Semijoin => {
-                            let scanned = |column: &usize| {
-                                bound_before(instr_order, &stages.instrs, cur, bind[*column].1)
-                            };
-                            let mut bound = SmallVec::<[usize; 16]>::with_capacity(bind.len());
-                            match prepared.tail_masks::<M>().zip(remaining_stages) {
-                                Some((masks, remaining)) => bound
-                                    .extend(masks.semijoin_bound_columns(stage_index, remaining)),
-                                None => bound.extend((0..bind.len()).filter(scanned)),
-                            }
-                            debug_assert!(
-                                bound.iter().copied().eq((0..bind.len()).filter(scanned)),
-                                "prepared semijoin binders diverged from the stage scanner"
-                            );
-                            let values: SmallVec<[Value; 16]> = bound
-                                .iter()
-                                .map(|&column| binding_info.bindings[bind[column].1])
-                                .collect();
                             // Fully bound, its values are the message's key: it probes it,
-                            // still refining the atoms it reads.
+                            // and refines its atoms unless it is only a probe.
                             if bound.len() == bind.len() {
                                 if cover_mat.contains_key(values.as_slice()) {
-                                    if prune_probers(&mut updates, Some(&values), None) {
+                                    if probe_only
+                                        || prune_probers(&mut updates, Some(&values), None)
+                                    {
                                         updates.finish_frame();
                                     } else {
                                         updates.rollback();
