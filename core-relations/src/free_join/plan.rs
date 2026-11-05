@@ -322,8 +322,6 @@ pub(crate) struct JoinStageData {
     /// Analyze only blocks that execute, then reuse their immutable layout.
     /// Catalog handles and arena addresses belong to each execution instead.
     pub(super) prepared_layout: OnceLock<Option<Box<super::prepared_index::PreparedJoinLayout>>>,
-    /// The DVO fence of `instrs`, from [`super::join_tail::semijoin_fence`].
-    pub(super) fence: usize,
 }
 
 impl std::ops::Deref for JoinStages {
@@ -343,7 +341,6 @@ impl JoinStages {
 
     pub(crate) fn new(instrs: Vec<JoinStage>) -> Self {
         Self(Arc::new(JoinStageData {
-            fence: super::join_tail::semijoin_fence(&instrs),
             instrs,
             families: Box::new([]),
             prepared_layout: OnceLock::new(),
@@ -1645,7 +1642,7 @@ fn get_next_freejoin_stage(
 
 /// Plan generic join queries (one variable per stage).
 ///
-/// Variables are visited in their natural id order. Runtime `sort_plan_by_size`
+/// Variables are visited in their natural id order. Runtime stage selection
 /// reorders stages anyway, so static ordering only needs to be deterministic;
 /// [`fuse_single_scans`] collapses any same-atom single-scans afterwards
 /// regardless of where they ended up.
