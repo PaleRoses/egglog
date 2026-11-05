@@ -1670,6 +1670,83 @@ fn branches_that_order_a_semijoin_differently_agree_on_a_shared_child() {
 }
 
 #[test]
+fn a_fully_bound_semijoin_admits_only_its_messages_keys() {
+    use crate::{
+        Database, RuleSetBuilder,
+        free_join::plan::{DecomposedPlan, JoinStageBlocks, JoinStages, MatSpec, Plan},
+        table_shortcuts::{TimestampedTable, v},
+    };
+    use egglog_reports::ReportLevel;
+
+    // r's ten pairs bind x and y before the semijoin, which then probes the message of
+    // m's 23 pairs; with no lookup after it, it alone keeps the three pairs both hold.
+    let mut db = Database::default();
+    let [r, m, found] = [(); 3].map(|()| {
+        db.add_table(
+            TimestampedTable::new(2, 2, Box::new(|_, _, _, _| false)),
+            std::iter::empty(),
+            std::iter::empty(),
+        )
+    });
+    // (table, n, dy): rows (i, i + dy) for i < n.
+    for (table, n, dy) in [(r, 10, 0), (m, 20, 1), (m, 3, 0)] {
+        let mut buf = db.new_buffer(table);
+        (0..n).for_each(|i| buf.stage_insert(&[v(i), v(i + dy)]));
+    }
+    db.merge_all();
+
+    let mut rsb = RuleSetBuilder::new(&mut db);
+    let mut query = rsb.new_rule();
+    let [x, y] = [(); 2].map(|()| query.new_var());
+    query.add_atom(r, &[x.into(), y.into()], &[]).unwrap();
+    query.add_atom(m, &[x.into(), y.into()], &[]).unwrap();
+    let mut rule = query.build();
+    rule.insert(found, &[x.into(), y.into()]).unwrap();
+    rule.build_with_description("fully-bound-semijoin");
+    let mut rules = rsb.build();
+
+    let (_, (plan, _, _)) = rules.plans.iter_mut().next().unwrap();
+    let intersect = |var, atom, column| JoinStage::Intersect {
+        var,
+        scans: smallvec![SingleScanSpec {
+            atom: AtomId::from_usize(atom),
+            column: ColumnId::from_usize(column),
+            cs: Vec::new(),
+        }],
+    };
+    let message = (
+        JoinStages::new(vec![intersect(x, 1, 0), intersect(y, 1, 1)]),
+        MatSpec {
+            msg_vars: smallvec![x, y],
+            val_vars: SmallVec::new(),
+        },
+    );
+    let bag = vec![
+        JoinStage::FusedIntersectMat {
+            cover: MatId::from_usize(0),
+            mode: MatScanMode::Semijoin,
+            bind: smallvec![(ColumnId::from_usize(0), x), (ColumnId::from_usize(1), y)],
+            to_intersect: Vec::new(),
+        },
+        intersect(x, 0, 0),
+        intersect(y, 0, 1),
+    ];
+    *plan = Plan::DecomposedPlan(DecomposedPlan {
+        atoms: plan.atoms(),
+        header: Vec::new(),
+        stages: JoinStageBlocks {
+            blocks: vec![message],
+        },
+        result_block: JoinStages::new(bag),
+        actions: plan.actions(),
+    });
+    db.intern_access_families(plan);
+
+    db.run_rule_set(&rules, ReportLevel::TimeOnly, None);
+    assert_eq!(db.get_table(found).len(), 3);
+}
+
+#[test]
 fn runtime_leaf_flags_match_full_refresh_after_changed_and_unchanged_choices() {
     use crate::free_join::join_tail::recompute_leaf_scans;
     let stages = vec![
