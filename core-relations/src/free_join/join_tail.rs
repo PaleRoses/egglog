@@ -385,7 +385,7 @@ pub(super) fn bound_before(
 }
 
 /// Whether `stage` binds `var`.
-fn binds(stage: &JoinStage, var: Variable) -> bool {
+pub(super) fn binds(stage: &JoinStage, var: Variable) -> bool {
     match stage {
         JoinStage::Intersect { var: bound, .. } => *bound == var,
         JoinStage::FusedIntersect { bind, .. } | JoinStage::FusedIntersectMat { bind, .. } => {

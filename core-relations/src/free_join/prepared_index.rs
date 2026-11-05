@@ -28,11 +28,11 @@ use super::{
     AtomId, Database, HashColumnIndex, HashIndex, TableInfo, get_column_index_from_tableinfo,
     get_index_from_tableinfo,
     join_tail::{
-        AtomTailUse, for_each_stage_atom, for_each_stage_indexed_access, is_reorder_barrier,
+        AtomTailUse, binds, for_each_stage_atom, for_each_stage_indexed_access, is_reorder_barrier,
     },
     packed_cache::{AccessFamilies, FamilyId, OwnedAtomRows},
     packed_trie::ChildShape,
-    plan::{JoinStage, JoinStages, Plan},
+    plan::{JoinStage, JoinStages, MatScanMode, Plan},
 };
 
 define_id!(
@@ -584,6 +584,9 @@ pub(super) struct PreparedTailMasks<M> {
     phase_masks: SmallVec<[M; 4]>,
     /// Initial remaining-stage mask for join-tail execution.
     all_stages: M,
+    /// Per stage, for a `Semijoin` the stages binding each of its columns'
+    /// variables, in column order; empty for every other stage.
+    semijoin_binders: Box<[SmallVec<[M; 4]>]>,
 }
 
 impl<M: StageMask> PreparedTailMasks<M> {
@@ -651,11 +654,45 @@ impl<M: StageMask> PreparedTailMasks<M> {
             phase_masks.push(reorderable_phase);
         }
 
+        let semijoin_binders = stages
+            .iter()
+            .map(|stage| match stage {
+                JoinStage::FusedIntersectMat {
+                    mode: MatScanMode::Semijoin,
+                    bind,
+                    ..
+                } => bind
+                    .iter()
+                    .map(|(_, var)| {
+                        (0..stages.len())
+                            .filter(|&binder| binds(&stages[binder], *var))
+                            .fold(M::EMPTY, |mask, binder| mask | M::stage_bit(binder))
+                    })
+                    .collect(),
+                _ => SmallVec::new(),
+            })
+            .collect();
+
         Self {
             atom_uses,
             phase_masks,
             all_stages,
+            semijoin_binders,
         }
+    }
+
+    /// The columns of `Semijoin` stage `stage` whose variables a stage outside
+    /// `remaining_stages` binds, ascending.
+    pub(super) fn semijoin_bound_columns(
+        &self,
+        stage: usize,
+        remaining_stages: M,
+    ) -> impl Iterator<Item = usize> + '_ {
+        self.semijoin_binders[stage]
+            .iter()
+            .enumerate()
+            .filter(move |(_, binders)| **binders & !remaining_stages != M::EMPTY)
+            .map(|(column, _)| column)
     }
 
     pub(super) fn atom_tail_use(&self, atom: AtomId, remaining_stages: M) -> AtomTailUse {

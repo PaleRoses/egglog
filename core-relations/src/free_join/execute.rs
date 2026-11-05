@@ -2376,19 +2376,28 @@ impl<'a, 'state, 'exec> JoinState<'a, 'state, 'exec> {
                             }
                         }
                         MatScanMode::Semijoin => {
-                            let bound: SmallVec<[(usize, Value); 4]> = bind
+                            let scanned = |column: &usize| {
+                                bound_before(instr_order, &stages.instrs, cur, bind[*column].1)
+                            };
+                            let mut bound = SmallVec::<[usize; 16]>::with_capacity(bind.len());
+                            match prepared.tail_masks::<M>().zip(remaining_stages) {
+                                Some((masks, remaining)) => bound
+                                    .extend(masks.semijoin_bound_columns(stage_index, remaining)),
+                                None => bound.extend((0..bind.len()).filter(scanned)),
+                            }
+                            debug_assert!(
+                                bound.iter().copied().eq((0..bind.len()).filter(scanned)),
+                                "prepared semijoin binders diverged from the stage scanner"
+                            );
+                            let values: SmallVec<[Value; 16]> = bound
                                 .iter()
-                                .filter(|(_, var)| {
-                                    bound_before(instr_order, &stages.instrs, cur, *var)
-                                })
-                                .map(|(col, var)| (col.index(), binding_info.bindings[*var]))
+                                .map(|&column| binding_info.bindings[bind[column].1])
                                 .collect();
-                            // Fully bound, it probes one key, still refining the atoms it reads.
+                            // Fully bound, its values are the message's key: it probes it,
+                            // still refining the atoms it reads.
                             if bound.len() == bind.len() {
-                                let key: SmallVec<[Value; 4]> =
-                                    bound.iter().map(|(_, val)| *val).collect();
-                                if cover_mat.contains_key(key.as_slice()) {
-                                    if prune_probers(&mut updates, Some(&key), None) {
+                                if cover_mat.contains_key(values.as_slice()) {
+                                    if prune_probers(&mut updates, Some(&values), None) {
                                         updates.finish_frame();
                                     } else {
                                         updates.rollback();
@@ -2396,7 +2405,9 @@ impl<'a, 'state, 'exec> JoinState<'a, 'state, 'exec> {
                                 }
                             } else {
                                 for group_key in cover_mat.keys() {
-                                    if bound.iter().any(|(col, val)| group_key[*col] != *val) {
+                                    if bound.iter().zip(&values).any(|(&column, value)| {
+                                        group_key[bind[column].0.index()] != *value
+                                    }) {
                                         continue;
                                     }
                                     for (col, var) in bind.iter() {
