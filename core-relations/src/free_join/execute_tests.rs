@@ -652,6 +652,44 @@ fn runtime_dvo_preserves_materialized_key_priority_over_smaller_rows() {
     assert_eq!(order, InstrOrder::from_iter([0, 1, 2].into_iter()));
 }
 
+#[test]
+fn a_semijoin_bound_before_the_next_stage_counts_one_row() {
+    // The semijoin reads v0 from a three-key message; stage 2 has two rows.
+    for (root, expected) in [
+        (intersect_stage(0, 0), [0, 1, 2]),
+        (intersect_stage(0, 1), [0, 2, 1]),
+    ] {
+        let stages = vec![
+            root,
+            JoinStage::FusedIntersectMat {
+                cover: MatId::from_usize(0),
+                mode: MatScanMode::Semijoin,
+                bind: smallvec![(ColumnId::from_usize(0), Variable::from_usize(0))],
+                to_intersect: Vec::new(),
+            },
+            intersect_stage(1, 2),
+        ];
+        let mut binding_info = binding_info_with_sizes(&[10, 2]);
+        let keys = (0..3)
+            .map(|key| (vec![Value::from_usize(key)], RowBuffer::new(1)))
+            .collect();
+        binding_info
+            .materializations
+            .insert(MatId::from_usize(0), Arc::new(keys));
+        let mut order = InstrOrder::from_iter(0..stages.len());
+
+        select_next_stage(
+            &mut order,
+            &mut smallvec![false; stages.len()],
+            1,
+            &stages,
+            &binding_info,
+        );
+
+        assert_eq!(order, InstrOrder::from_iter(expected.into_iter()));
+    }
+}
+
 fn key_only_stage(mat_id: usize, arity: usize, probes: usize) -> JoinStage {
     JoinStage::FusedIntersectMat {
         cover: MatId::from_usize(mat_id),
