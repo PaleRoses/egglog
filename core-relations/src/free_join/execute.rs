@@ -2263,26 +2263,41 @@ impl<'a, 'state, 'exec> JoinState<'a, 'state, 'exec> {
                 (|| {
                     let mut updates: FrameUpdates<'rows, 'exec> =
                         FrameUpdates::with_capacity(cmp::min(chunk_size, cur_size));
-                    let (bound, values) = if *mode == MatScanMode::Semijoin {
-                        let scanned = |column: &usize| {
-                            bound_before(instr_order, &stages.instrs, cur, bind[*column].1)
+                    // `partial` is `None` when every column is bound: the values are then
+                    // the message's key. Otherwise it lists the bound columns.
+                    let (partial, values) = if *mode == MatScanMode::Semijoin {
+                        let column_bound = |column: usize| {
+                            let scanned =
+                                || bound_before(instr_order, &stages.instrs, cur, bind[column].1);
+                            let bound = match prepared.tail_masks::<M>().zip(remaining_stages) {
+                                Some((masks, remaining)) => {
+                                    masks.semijoin_column_bound(stage_index, column, remaining)
+                                }
+                                None => scanned(),
+                            };
+                            debug_assert_eq!(
+                                bound,
+                                scanned(),
+                                "prepared semijoin binders diverged from the stage scanner"
+                            );
+                            bound
                         };
-                        let mut bound = SmallVec::<[usize; 16]>::with_capacity(bind.len());
-                        match prepared.tail_masks::<M>().zip(remaining_stages) {
-                            Some((masks, remaining)) => {
-                                bound.extend(masks.semijoin_bound_columns(stage_index, remaining))
-                            }
-                            None => bound.extend((0..bind.len()).filter(scanned)),
+                        if (0..bind.len()).all(column_bound) {
+                            let values: SmallVec<[Value; 16]> = bind
+                                .iter()
+                                .map(|(_, var)| binding_info.bindings[*var])
+                                .collect();
+                            (None, values)
+                        } else {
+                            let bound: SmallVec<[usize; 16]> = (0..bind.len())
+                                .filter(|&column| column_bound(column))
+                                .collect();
+                            let values = bound
+                                .iter()
+                                .map(|&column| binding_info.bindings[bind[column].1])
+                                .collect();
+                            (Some(bound), values)
                         }
-                        debug_assert!(
-                            bound.iter().copied().eq((0..bind.len()).filter(scanned)),
-                            "prepared semijoin binders diverged from the stage scanner"
-                        );
-                        let values: SmallVec<[Value; 16]> = bound
-                            .iter()
-                            .map(|&column| binding_info.bindings[bind[column].1])
-                            .collect();
-                        (bound, values)
                     } else {
                         Default::default()
                     };
@@ -2315,9 +2330,8 @@ impl<'a, 'state, 'exec> JoinState<'a, 'state, 'exec> {
                         );
                         read
                     };
-                    let probe_only = *mode == MatScanMode::Semijoin
-                        && bound.len() == bind.len()
-                        && !read_later();
+                    let probe_only =
+                        *mode == MatScanMode::Semijoin && partial.is_none() && !read_later();
                     let probers: SmallVec<[Prober<'_, 'rows, 'exec>; 4]> = to_intersect
                         .iter()
                         .filter(|_| !probe_only)
@@ -2434,33 +2448,36 @@ impl<'a, 'state, 'exec> JoinState<'a, 'state, 'exec> {
                         MatScanMode::Semijoin => {
                             // Fully bound, its values are the message's key: it probes it,
                             // and refines its atoms unless it is only a probe.
-                            if bound.len() == bind.len() {
-                                if cover_mat.contains_key(values.as_slice()) {
-                                    if probe_only
-                                        || prune_probers(&mut updates, Some(&values), None)
-                                    {
-                                        updates.finish_frame();
-                                    } else {
-                                        updates.rollback();
+                            match &partial {
+                                None => {
+                                    if cover_mat.contains_key(values.as_slice()) {
+                                        if probe_only
+                                            || prune_probers(&mut updates, Some(&values), None)
+                                        {
+                                            updates.finish_frame();
+                                        } else {
+                                            updates.rollback();
+                                        }
                                     }
                                 }
-                            } else {
-                                for group_key in cover_mat.keys() {
-                                    if bound.iter().zip(&values).any(|(&column, value)| {
-                                        group_key[bind[column].0.index()] != *value
-                                    }) {
-                                        continue;
-                                    }
-                                    for (col, var) in bind.iter() {
-                                        updates.push_binding(*var, group_key[col.index()]);
-                                    }
-                                    if prune_probers(&mut updates, Some(group_key), None) {
-                                        updates.finish_frame();
-                                    } else {
-                                        updates.rollback();
-                                    }
-                                    if updates.frames() >= chunk_size {
-                                        drain_updates!(updates);
+                                Some(bound) => {
+                                    for group_key in cover_mat.keys() {
+                                        if bound.iter().zip(&values).any(|(&column, value)| {
+                                            group_key[bind[column].0.index()] != *value
+                                        }) {
+                                            continue;
+                                        }
+                                        for (col, var) in bind.iter() {
+                                            updates.push_binding(*var, group_key[col.index()]);
+                                        }
+                                        if prune_probers(&mut updates, Some(group_key), None) {
+                                            updates.finish_frame();
+                                        } else {
+                                            updates.rollback();
+                                        }
+                                        if updates.frames() >= chunk_size {
+                                            drain_updates!(updates);
+                                        }
                                     }
                                 }
                             }

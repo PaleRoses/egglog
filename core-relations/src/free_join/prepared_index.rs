@@ -704,18 +704,15 @@ impl<M: StageMask> PreparedTailMasks<M> {
         self.semijoin_readers[stage] & remaining_stages != M::EMPTY
     }
 
-    /// The columns of `Semijoin` stage `stage` whose variables a stage outside
-    /// `remaining_stages` binds, ascending.
-    pub(super) fn semijoin_bound_columns(
+    /// Whether a stage outside `remaining_stages` binds the variable of column
+    /// `column` of `Semijoin` stage `stage`.
+    pub(super) fn semijoin_column_bound(
         &self,
         stage: usize,
+        column: usize,
         remaining_stages: M,
-    ) -> impl Iterator<Item = usize> + '_ {
-        self.semijoin_binders[stage]
-            .iter()
-            .enumerate()
-            .filter(move |(_, binders)| **binders & !remaining_stages != M::EMPTY)
-            .map(|(column, _)| column)
+    ) -> bool {
+        self.semijoin_binders[stage][column] & !remaining_stages != M::EMPTY
     }
 
     pub(super) fn atom_tail_use(&self, atom: AtomId, remaining_stages: M) -> AtomTailUse {
