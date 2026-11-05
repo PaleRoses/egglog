@@ -2288,10 +2288,9 @@ impl<'a, 'state, 'exec> JoinState<'a, 'state, 'exec> {
                     };
                     // Fully bound with no later stage keeping its atoms, a semijoin is a
                     // membership probe of its message and refines nothing.
-                    let probe_only = *mode == MatScanMode::Semijoin
-                        && bound.len() == bind.len()
-                        && to_intersect.iter().all(|(spec, _)| {
-                            !atom_tail_use(
+                    let scanned_read = || {
+                        to_intersect.iter().any(|(spec, _)| {
+                            atom_tail_use(
                                 spec.to_index.atom,
                                 &stages.instrs,
                                 prepared,
@@ -2300,7 +2299,25 @@ impl<'a, 'state, 'exec> JoinState<'a, 'state, 'exec> {
                                 cur + 1,
                             )
                             .keep_rows
-                        });
+                        })
+                    };
+                    let read_later = || {
+                        let read = match prepared.tail_masks::<M>().zip(remaining_after_current) {
+                            Some((masks, remaining)) => {
+                                masks.semijoin_atoms_read(stage_index, remaining)
+                            }
+                            None => scanned_read(),
+                        };
+                        debug_assert_eq!(
+                            read,
+                            scanned_read(),
+                            "prepared semijoin readers diverged from the stage scanner"
+                        );
+                        read
+                    };
+                    let probe_only = *mode == MatScanMode::Semijoin
+                        && bound.len() == bind.len()
+                        && !read_later();
                     let probers: SmallVec<[Prober<'_, 'rows, 'exec>; 4]> = to_intersect
                         .iter()
                         .filter(|_| !probe_only)

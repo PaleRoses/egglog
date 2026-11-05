@@ -587,6 +587,9 @@ pub(super) struct PreparedTailMasks<M> {
     /// Per stage, for a `Semijoin` the stages binding each of its columns'
     /// variables, in column order; empty for every other stage.
     semijoin_binders: Box<[SmallVec<[M; 4]>]>,
+    /// Per stage, for a `Semijoin` the stages touching any atom it intersects;
+    /// empty for every other stage.
+    semijoin_readers: Box<[M]>,
 }
 
 impl<M: StageMask> PreparedTailMasks<M> {
@@ -672,13 +675,33 @@ impl<M: StageMask> PreparedTailMasks<M> {
                 _ => SmallVec::new(),
             })
             .collect();
+        let semijoin_readers = stages
+            .iter()
+            .map(|stage| match stage {
+                JoinStage::FusedIntersectMat {
+                    mode: MatScanMode::Semijoin,
+                    to_intersect,
+                    ..
+                } => to_intersect.iter().fold(M::EMPTY, |mask, (scan, _)| {
+                    mask | atom_uses[scan.to_index.atom.index()].touched_stages
+                }),
+                _ => M::EMPTY,
+            })
+            .collect();
 
         Self {
             atom_uses,
             phase_masks,
             all_stages,
             semijoin_binders,
+            semijoin_readers,
         }
+    }
+
+    /// Whether a stage in `remaining_stages` reads an atom that `Semijoin`
+    /// stage `stage` intersects.
+    pub(super) fn semijoin_atoms_read(&self, stage: usize, remaining_stages: M) -> bool {
+        self.semijoin_readers[stage] & remaining_stages != M::EMPTY
     }
 
     /// The columns of `Semijoin` stage `stage` whose variables a stage outside
