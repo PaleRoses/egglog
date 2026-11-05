@@ -2263,22 +2263,46 @@ impl<'a, 'state, 'exec> JoinState<'a, 'state, 'exec> {
                 (|| {
                     let mut updates: FrameUpdates<'rows, 'exec> =
                         FrameUpdates::with_capacity(cmp::min(chunk_size, cur_size));
-                    let column_bound = |column: usize| {
-                        let scanned =
-                            || bound_before(instr_order, &stages.instrs, cur, bind[column].1);
-                        let bound = match prepared.tail_masks::<M>().zip(remaining_stages) {
-                            Some((masks, remaining)) => {
-                                masks.semijoin_column_bound(stage_index, column, remaining)
-                            }
-                            None => scanned(),
+                    // `partial` is `None` when every column is bound: the values are then
+                    // the message's key. Otherwise it lists the bound columns.
+                    let (partial, values) = if *mode == MatScanMode::Semijoin {
+                        let column_bound = |column: usize| {
+                            let scanned =
+                                || bound_before(instr_order, &stages.instrs, cur, bind[column].1);
+                            let bound = match prepared.tail_masks::<M>().zip(remaining_stages) {
+                                Some((masks, remaining)) => {
+                                    masks.semijoin_column_bound(stage_index, column, remaining)
+                                }
+                                None => scanned(),
+                            };
+                            debug_assert_eq!(
+                                bound,
+                                scanned(),
+                                "prepared semijoin binders diverged from the stage scanner"
+                            );
+                            bound
                         };
-                        debug_assert_eq!(
-                            bound,
-                            scanned(),
-                            "prepared semijoin binders diverged from the stage scanner"
-                        );
-                        bound
+                        if (0..bind.len()).all(column_bound) {
+                            let values: SmallVec<[Value; 16]> = bind
+                                .iter()
+                                .map(|(_, var)| binding_info.bindings[*var])
+                                .collect();
+                            (None, values)
+                        } else {
+                            let bound: SmallVec<[usize; 16]> = (0..bind.len())
+                                .filter(|&column| column_bound(column))
+                                .collect();
+                            let values = bound
+                                .iter()
+                                .map(|&column| binding_info.bindings[bind[column].1])
+                                .collect();
+                            (Some(bound), values)
+                        }
+                    } else {
+                        Default::default()
                     };
+                    // Fully bound with no later stage keeping its atoms, a semijoin is a
+                    // membership probe of its message and refines nothing.
                     let scanned_read = || {
                         to_intersect.iter().any(|(spec, _)| {
                             atom_tail_use(
@@ -2306,33 +2330,8 @@ impl<'a, 'state, 'exec> JoinState<'a, 'state, 'exec> {
                         );
                         read
                     };
-                    let fully_bound =
-                        *mode == MatScanMode::Semijoin && (0..bind.len()).all(column_bound);
-                    // Fully bound with no later stage keeping its atoms, a semijoin is a
-                    // membership probe of its message: it runs as a `Lookup` of its key.
-                    let probe_only = fully_bound && !read_later();
-                    // `partial` is `None` when every column is bound: the values are then
-                    // the message's key. Otherwise it lists the bound columns.
-                    let (partial, values) = if *mode == MatScanMode::Semijoin && !probe_only {
-                        if fully_bound {
-                            let values: SmallVec<[Value; 16]> = bind
-                                .iter()
-                                .map(|(_, var)| binding_info.bindings[*var])
-                                .collect();
-                            (None, values)
-                        } else {
-                            let bound: SmallVec<[usize; 16]> = (0..bind.len())
-                                .filter(|&column| column_bound(column))
-                                .collect();
-                            let values = bound
-                                .iter()
-                                .map(|&column| binding_info.bindings[bind[column].1])
-                                .collect();
-                            (Some(bound), values)
-                        }
-                    } else {
-                        Default::default()
-                    };
+                    let probe_only =
+                        *mode == MatScanMode::Semijoin && partial.is_none() && !read_later();
                     let probers: SmallVec<[Prober<'_, 'rows, 'exec>; 4]> = to_intersect
                         .iter()
                         .filter(|_| !probe_only)
@@ -2392,22 +2391,6 @@ impl<'a, 'state, 'exec> JoinState<'a, 'state, 'exec> {
                         true
                     };
 
-                    // A `Lookup`'s frame: the message's key, from `vars` in key order,
-                    // admits it when the message holds that key.
-                    macro_rules! lookup_message {
-                        ($vars:expr) => {{
-                            let keys = $vars
-                                .map(|var| binding_info.bindings[var])
-                                .collect::<Vec<Value>>();
-                            if let Some(group) = cover_mat.get(&keys) {
-                                if group.len() > 0 {
-                                    updates.finish_frame();
-                                }
-                                drain_updates!(updates);
-                            }
-                        }};
-                    }
-
                     match mode {
                         MatScanMode::Full | MatScanMode::KeyOnly => {
                             // enumerate keys
@@ -2462,16 +2445,15 @@ impl<'a, 'state, 'exec> JoinState<'a, 'state, 'exec> {
                                 }
                             }
                         }
-                        MatScanMode::Semijoin if probe_only => {
-                            lookup_message!(bind.iter().map(|(_, var)| *var))
-                        }
                         MatScanMode::Semijoin => {
-                            // Fully bound, its values are the message's key: it probes it
-                            // and refines its atoms.
+                            // Fully bound, its values are the message's key: it probes it,
+                            // and refines its atoms unless it is only a probe.
                             match &partial {
                                 None => {
                                     if cover_mat.contains_key(values.as_slice()) {
-                                        if prune_probers(&mut updates, Some(&values), None) {
+                                        if probe_only
+                                            || prune_probers(&mut updates, Some(&values), None)
+                                        {
                                             updates.finish_frame();
                                         } else {
                                             updates.rollback();
@@ -2500,32 +2482,36 @@ impl<'a, 'state, 'exec> JoinState<'a, 'state, 'exec> {
                                 }
                             }
                         }
-                        MatScanMode::Lookup(index_vars) => {
-                            debug_assert_eq!(to_intersect.len(), 0);
-                            debug_assert_eq!(bind.len(), 0);
-                            lookup_message!(index_vars.iter().copied())
-                        }
-                        MatScanMode::Value(index_vars) => {
+                        MatScanMode::Value(index_vars) | MatScanMode::Lookup(index_vars) => {
                             let keys = index_vars
                                 .iter()
                                 .map(|var| binding_info.bindings[*var])
                                 .collect::<Vec<Value>>();
                             // lookup keys
                             if let Some(group) = cover_mat.get(&keys) {
-                                // enumerate non-keys
-                                // for vals in group.value().iter() {
-                                for vals in group.iter() {
-                                    debug_assert!(vals.len() == bind.len()); // TODO: not true for non-full query
-                                    for (col, var) in bind.iter() {
-                                        updates.push_binding(*var, vals[col.index()]);
-                                    }
-                                    if prune_probers(&mut updates, None, Some(vals)) {
+                                if matches!(mode, MatScanMode::Lookup(_)) {
+                                    debug_assert_eq!(to_intersect.len(), 0);
+                                    debug_assert_eq!(bind.len(), 0);
+                                    if group.len() > 0 {
                                         updates.finish_frame();
-                                    } else {
-                                        updates.rollback();
                                     }
-                                    if updates.frames() >= chunk_size {
-                                        drain_updates!(updates);
+                                    drain_updates!(updates);
+                                } else {
+                                    // enumerate non-keys
+                                    // for vals in group.value().iter() {
+                                    for vals in group.iter() {
+                                        debug_assert!(vals.len() == bind.len()); // TODO: not true for non-full query
+                                        for (col, var) in bind.iter() {
+                                            updates.push_binding(*var, vals[col.index()]);
+                                        }
+                                        if prune_probers(&mut updates, None, Some(vals)) {
+                                            updates.finish_frame();
+                                        } else {
+                                            updates.rollback();
+                                        }
+                                        if updates.frames() >= chunk_size {
+                                            drain_updates!(updates);
+                                        }
                                     }
                                 }
                             }
