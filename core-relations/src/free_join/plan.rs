@@ -1006,7 +1006,9 @@ fn plan_single_bag(
     let mut stripped_bag = bag.clone();
 
     // Add prologue and epilogue instructions to look up previous materialized bags
-    // Later messages become reorderable semijoins, lookups, or both.
+    // A later message sharing a variable with the stripped bag becomes a
+    // reorderable semijoin, which admits only frames whose key the message
+    // holds; one the prologue binds entirely becomes a lookup.
     let mut prologue = Vec::new();
     let mut epilogue = Vec::new();
     for (i, prev_block) in blocks.iter().enumerate().rev() {
@@ -1022,7 +1024,8 @@ fn plan_single_bag(
         {
             has_block_contributed[i] = true;
             let (first, msg) = (prologue.is_empty(), &prev_block.1.msg_vars);
-            if msg.iter().any(|var| stripped_bag.vars.contains_key(*var)) {
+            let scanned = msg.iter().any(|var| stripped_bag.vars.contains_key(*var));
+            if scanned {
                 let bind = prev_block
                     .1
                     .msg_vars
@@ -1077,7 +1080,7 @@ fn plan_single_bag(
                 stripped_bag
                     .vars
                     .retain(|var, _vinfo| !prev_block.1.msg_vars.contains(&var));
-            } else if !msg.iter().all(|var| stripped_bag.vars.contains_key(*var)) {
+            } else if !scanned {
                 epilogue.push(JoinStage::FusedIntersectMat {
                     cover: MatId::from_usize(i),
                     mode: MatScanMode::Lookup(prev_block.1.msg_vars.clone()),
