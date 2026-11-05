@@ -418,9 +418,10 @@ pub(super) fn is_reorder_barrier(stage: &JoinStage) -> bool {
 /// row count and decreasing number of intersected relations. Use this same
 /// key before execution and when selecting a later stage. Exact ties keep
 /// the first stage in physical order. Rows bound the candidates an
-/// intersection or fused cover can enumerate and reflect earlier filtering;
-/// a `Semijoin` whose variables the stages before `start` all bind is one
-/// probe, one row.
+/// intersection or fused cover can enumerate and reflect earlier filtering.
+/// A message is keyed by all its columns, so a `Semijoin` whose variables
+/// the stages before `start` all bind probes a materialized key: it counts
+/// those keys and one row. Bound only in part, it counts its message's rows.
 ///
 /// Insert the selected stage at the next position, preserving the order of
 /// the other stages: their cardinalities change when that stage executes. This
@@ -441,15 +442,12 @@ pub(super) fn select_next_stage(
         .unwrap_or(order.len());
     let best = (start..end).min_by_key(|&position| {
         let stage = &instrs[order.get(position)];
-        let materialized_keys = match stage {
+        let (materialized_keys, rows) = match stage {
             JoinStage::FusedIntersectMat {
                 mode: MatScanMode::KeyOnly,
                 bind,
                 ..
-            } => bind.len() as i64,
-            _ => 0,
-        };
-        let rows = match stage {
+            } => (bind.len(), estimate_size(stage, binding_info)),
             JoinStage::FusedIntersectMat {
                 mode: MatScanMode::Semijoin,
                 bind,
@@ -458,11 +456,15 @@ pub(super) fn select_next_stage(
                 .iter()
                 .all(|(_, var)| bound_before(order, instrs, start, *var)) =>
             {
-                1
+                (bind.len(), 1)
             }
-            _ => estimate_size(stage, binding_info),
+            _ => (0, estimate_size(stage, binding_info)),
         };
-        (-materialized_keys, rows, -num_intersected_rels(stage))
+        (
+            -(materialized_keys as i64),
+            rows,
+            -num_intersected_rels(stage),
+        )
     });
     if let Some(best) = best {
         order.data[start..=best].rotate_right(1);

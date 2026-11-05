@@ -653,11 +653,13 @@ fn runtime_dvo_preserves_materialized_key_priority_over_smaller_rows() {
 }
 
 #[test]
-fn a_semijoin_bound_before_the_next_stage_counts_one_row() {
-    // The semijoin reads v0 from a three-key message; stage 2 has two rows.
-    for (root, expected) in [
-        (intersect_stage(0, 0), [0, 1, 2]),
-        (intersect_stage(0, 1), [0, 2, 1]),
+fn a_semijoin_bound_before_the_next_stage_is_a_materialized_key() {
+    // The semijoin reads v0 from a three-key message; stage 2 has `rows` rows.
+    // Bound, it is a materialized key, ahead of even a one-row stage.
+    for (root, rows, expected) in [
+        (intersect_stage(0, 0), 2, [0, 1, 2]),
+        (intersect_stage(0, 0), 1, [0, 1, 2]),
+        (intersect_stage(0, 1), 2, [0, 2, 1]),
     ] {
         let stages = vec![
             root,
@@ -669,7 +671,7 @@ fn a_semijoin_bound_before_the_next_stage_counts_one_row() {
             },
             intersect_stage(1, 2),
         ];
-        let mut binding_info = binding_info_with_sizes(&[10, 2]);
+        let mut binding_info = binding_info_with_sizes(&[10, rows]);
         let keys = (0..3)
             .map(|key| (vec![Value::from_usize(key)], RowBuffer::new(1)))
             .collect();
